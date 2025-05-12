@@ -1,0 +1,213 @@
+import { createChart, type IChartApi, type ISeriesApi } from "lightweight-charts";
+import {
+  type Accessor,
+  createEffect,
+  createMemo,
+  createSignal,
+  type JSX,
+  mergeProps,
+  onCleanup,
+  onMount,
+  type ParentProps,
+  Show,
+  splitProps,
+} from "solid-js";
+
+import { SERIES_DEFINITION_MAP } from "../constants";
+import { ChartContext, useChart } from "../contexts/chart";
+import { PaneIndexContext, usePaneIndex } from "../contexts/pane";
+import type {
+  BuiltInSeriesType,
+  ChartCommonProps,
+  ChartWithPaneState,
+  PaneProps,
+  SeriesProps,
+} from "../types";
+
+type TimeChartOptions = NonNullable<Parameters<typeof createChart>[1]>;
+
+/**
+ * Props accepted by the `TimeChart` component.
+ *
+ * In addition to the standard Lightweight Charts options, it supports:
+ *
+ * - `ref`: optional access to the chart's container DOM element
+ * - `onCreateChart`: callback when the chart instance is created
+ * - `onResize`: callback after a manual resize (if `autoSize` is false)
+ */
+type TimeChartProps = ChartCommonProps<IChartApi> & TimeChartOptions;
+
+/**
+ * A SolidJS wrapper component for creating a time-based chart using
+ * TradingView's `createChart` function from Lightweight Charts.
+ *
+ * This component sets up the chart lifecycle, provides chart context to child components,
+ * and supports auto-sizing or fixed-size rendering.
+ *
+ * @example
+ * ```tsx
+ * <TimeChart>
+ *   <TimeChart.Series type="Line" data={...} />
+ *   <TimeChart.Pane>
+ *     <TimeChart.Series type="Histogram" data={...} />
+ *   </TimeChart.Pane>
+ * </TimeChart>
+ * ```
+ *
+ * @param props - Chart configuration and lifecycle callbacks.
+ */
+export const TimeChart = (props: ParentProps<TimeChartProps>): JSX.Element => {
+  let chartContainer!: HTMLDivElement;
+
+  const [containerProps, options] = splitProps(props, [
+    "id",
+    "class",
+    "ref",
+    "style",
+    "onCreateChart",
+    "onResize",
+    "children",
+  ]);
+
+  const _options = mergeProps(
+    {
+      autoSize: true,
+      width: 0,
+      height: 0,
+      forceRepaintOnResize: false,
+    },
+    options,
+  );
+
+  const [resizeProps, chartOptions] = splitProps(_options, [
+    "width",
+    "height",
+    "forceRepaintOnResize",
+  ]);
+
+  const [chart, setChart] = createSignal<IChartApi>();
+
+  onMount(() => {
+    props.ref?.(chartContainer);
+    const chart = createChart(chartContainer, chartOptions) as ChartWithPaneState<IChartApi>;
+
+    chart.__nextPaneIndex = 1; // 0 is the default pane
+    chart.__getNextPaneIndex = () => chart.__nextPaneIndex++;
+
+    setChart(chart);
+
+    containerProps.onCreateChart?.(chart);
+
+    createEffect(() => {
+      if (chartOptions.autoSize) return;
+
+      chart.resize(resizeProps.width, resizeProps.height, resizeProps.forceRepaintOnResize);
+      containerProps.onResize?.(resizeProps.width, resizeProps.height);
+    });
+
+    createEffect(() => {
+      chart.applyOptions(chartOptions);
+    });
+
+    onCleanup(() => {
+      chart.remove();
+    });
+  });
+
+  return (
+    <>
+      <div
+        id={containerProps.id}
+        class={containerProps.class}
+        style={containerProps.style}
+        ref={chartContainer}
+      />
+      <Show when={chart()}>
+        {(chart) => (
+          <ChartContext.Provider value={chart}>{containerProps.children}</ChartContext.Provider>
+        )}
+      </Show>
+    </>
+  );
+};
+
+const Pane = (props: PaneProps) => {
+  const chart = useChart() as unknown as Accessor<ChartWithPaneState<IChartApi>>;
+
+  const paneIdx = createMemo(() => props.index ?? chart().__getNextPaneIndex());
+
+  onCleanup(() => {
+    chart().removePane(paneIdx());
+  });
+
+  return <PaneIndexContext.Provider value={paneIdx}>{props.children}</PaneIndexContext.Provider>;
+};
+
+/**
+ * Represents an individual pane within a `TimeChart`.
+ *
+ * If no `index` is provided, the pane index will be automatically assigned and incremented.
+ * Each pane hosts its own Y-axis scale, and can be used to render series like volume or indicators
+ * separately from the primary chart area.
+ *
+ * Pane index `0` is reserved for the default pane.
+ *
+ * @example
+ * ```tsx
+ * <TimeChart.Pane>
+ *   <TimeChart.Series type="Histogram" data={volumeData} />
+ * </TimeChart.Pane>
+ * ```
+ *
+ * @param props.index - Optional pane index to explicitly control placement.
+ */
+TimeChart.Pane = Pane;
+
+const Series = <T extends BuiltInSeriesType>(props: SeriesProps<T>) => {
+  const chart = useChart();
+  const paneIdx = usePaneIndex();
+
+  const [local, options] = splitProps(props, ["data", "onCreateSeries", "onSetData"]);
+
+  onMount(() => {
+    const series = chart().addSeries(
+      SERIES_DEFINITION_MAP[props.type],
+      options,
+      paneIdx(),
+    ) as ISeriesApi<T>;
+    local.onCreateSeries?.(series, paneIdx());
+
+    createEffect(() => {
+      series.setData(local.data);
+      local.onSetData?.({ series, data: local.data });
+    });
+
+    createEffect(() => {
+      series.applyOptions(options);
+    });
+
+    onCleanup(() => {
+      chart().removeSeries(series);
+    });
+  });
+
+  return null;
+};
+
+/**
+ * Renders a series (Line, Area, Candlestick, etc.) within a `TimeChart`.
+ *
+ * This component must be a child of `<TimeChart>` or `<TimeChart.Pane>`, and will automatically
+ * attach itself to the correct pane based on context.
+ *
+ * @typeParam T - The built-in series type (e.g., `"Line"`, `"Area"`, `"Candlestick"`, etc.)
+ *
+ * @param props.type - The type of series to render.
+ * @param props.data - The time-series data to be displayed.
+ * @param props.onCreateSeries - Optional callback that receives the underlying `ISeriesApi<T>`.
+ * @param props.onSetData - Optional callback fired after `setData()` is called.
+ *
+ * @see https://tradingview.github.io/lightweight-charts/docs/api/interfaces/ISeriesApi
+ * @see https://tradingview.github.io/lightweight-charts/docs/series-types
+ */
+TimeChart.Series = Series;

@@ -1,10 +1,10 @@
 {
-  "name": "template-solidjs-library",
+  "name": "@dschz/solid-lightweight-charts",
   "version": "0.0.0",
   "license": "MIT",
   "exports": "./src/index.tsx",
   "publish": {
-    "include": ["LICENSE", "README.md", "src/**/*.tsx"],
+    "include": ["LICENSE", "README.md", "src/**/*.tsx", "src/**/*.ts"],
     "exclude": ["**/*.test.tsx"]
   }
 }

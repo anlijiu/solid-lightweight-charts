@@ -1,23 +1,43 @@
 {
-  "name": "template-solidjs-library",
+  "name": "@dschz/solid-lightweight-charts",
   "version": "0.0.0",
-  "description": "Template for SolidJS library using tsup for bundling. Configured with Bun, NVM, TypeScript, ESLint, Prettier, Vitest, and GHA",
+  "description": "TradingView Lightweight Charts™ as SolidJS components",
   "type": "module",
-  "author": "Daniel Sanchez <dsanc89@icloud.com>",
+  "author": "Daniel Sanchez <dsanc89@pm.me>",
   "license": "MIT",
-  "homepage": "https://github.com/thedanchez/template-solidjs-library#readme",
+  "homepage": "https://github.com/dsnchz/solid-lightweight-charts#readme",
   "repository": {
     "type": "git",
-    "url": "https://github.com/thedanchez/template-solidjs-library.git"
+    "url": "https://github.com/dsnchz/solid-lightweight-charts.git"
   },
   "bugs": {
-    "url": "https://github.com/thedanchez/template-solidjs-library/issues"
+    "url": "https://github.com/dsnchz/solid-lightweight-charts/issues"
   },
   "publishConfig": {
     "access": "public"
   },
   "files": [
     "dist"
+  ],
+  "keywords": [
+    "solidjs",
+    "solid",
+    "solid-component",
+    "lightweight-charts",
+    "tradingview",
+    "chart",
+    "charts",
+    "candlestick",
+    "financial-charts",
+    "time-series",
+    "stock-charts",
+    "crypto-charts",
+    "data-visualization",
+    "technical-analysis",
+    "price-chart",
+    "yield-curve",
+    "options-chart",
+    "typescript"
   ],
   "main": "./dist/index.js",
   "module": "./dist/index.js",
@@ -57,6 +77,7 @@
     "@typescript-eslint/eslint-plugin": "^8.32.0",
     "@typescript-eslint/parser": "^8.32.0",
     "@vitest/coverage-istanbul": "^3.1.3",
+    "date-fns": "^4.1.0",
     "eslint": "^9.26.0",
     "eslint-plugin-simple-import-sort": "^12.1.1",
     "eslint-plugin-solid": "^0.14.5",
@@ -74,6 +95,7 @@
     "vitest": "^3.1.3"
   },
   "peerDependencies": {
+    "lightweight-charts": ">=5.0.0",
     "solid-js": ">=1.6.0"
   }
 }
