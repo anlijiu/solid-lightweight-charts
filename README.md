@@ -4,12 +4,13 @@
 
 # @dschz/solid-lightweight-charts
 
-> A fully typed SolidJS wrapper around TradingView's [Lightweight Charts](https://github.com/tradingview/lightweight-charts), providing declarative, reactive charting with support for time series, price, and yield curve data.
-
-[![npm version](https://img.shields.io/npm/v/@dschz/solid-lightweight-charts?style=flat-square)](https://www.npmjs.com/package/@dschz/solid-lightweight-charts)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](LICENSE)
-[![SolidJS](https://img.shields.io/badge/solidjs-1.8.0+-blue?style=flat-square)](https://www.solidjs.com/)
+[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![Lightweight Charts](https://img.shields.io/badge/lightweight--charts-5.0.0+-blue?style=flat-square)](https://github.com/tradingview/lightweight-charts)
+[![npm version](https://img.shields.io/npm/v/@dschz/solid-lightweight-charts?style=flat-square)](https://www.npmjs.com/package/@dschz/solid-lightweight-charts)
+[![Bundle Size](https://img.shields.io/bundlephobia/minzip/@dschz/solid-uplot)](https://bundlephobia.com/package/@dschz/solid-lightweight-charts)
+[![CI](https://github.com/dsnchz/solid-lightweight-charts/actions/workflows/ci.yaml/badge.svg)](https://github.com/dsnchz/solid-lightweight-charts/actions/workflows/ci.yaml)
+
+> A fully typed SolidJS wrapper around TradingView's [Lightweight Charts](https://github.com/tradingview/lightweight-charts), providing declarative, reactive charting with support for time series, price, and yield curve data.
 
 ![Solid Lightweight Charts Showcase](assets/solid-lightweight-charts-showcase.png)
 
