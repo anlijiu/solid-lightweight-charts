@@ -37,7 +37,7 @@ describe("Chart Contexts", () => {
 
     expect(() => {
       render(() => <InvalidTimeChartConsumer />);
-    }).toThrow("[solid-lightweight-charts] No parent Chart component found!");
+    }).toThrow("[solid-lightweight-charts] No parent TimeChart component found!");
 
     // Restore console.error
     console.error = originalConsoleError;
