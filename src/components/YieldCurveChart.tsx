@@ -27,6 +27,7 @@ import type {
   ChartWithPaneState,
   CustomSeriesProps,
   PaneProps,
+  SeriesPrimitive,
   SeriesProps,
 } from "../types";
 
@@ -180,8 +181,17 @@ YieldCurveChart.Pane = Pane;
 const Series = <T extends YieldCurveSeriesType>(props: SeriesProps<T, number>) => {
   const chart = useYieldCurveChart();
   const paneIdx = usePaneIndex();
-  const [local, options] = splitProps(props, [
+
+  const _props = mergeProps(
+    {
+      primitives: [] as SeriesPrimitive<T, number>[],
+    },
+    props,
+  );
+
+  const [local, options] = splitProps(_props, [
     "data",
+    "primitives",
     "onCreateSeries",
     "onRemoveSeries",
     "onSetData",
@@ -199,6 +209,18 @@ const Series = <T extends YieldCurveSeriesType>(props: SeriesProps<T, number>) =
 
     createEffect(() => {
       series.applyOptions(options);
+    });
+
+    createEffect(() => {
+      for (const primitive of local.primitives) {
+        series.attachPrimitive(primitive);
+      }
+
+      onCleanup(() => {
+        for (const primitive of local.primitives) {
+          series.detachPrimitive(primitive);
+        }
+      });
     });
 
     onCleanup(() => {
@@ -233,8 +255,17 @@ YieldCurveChart.Series = Series;
 const CustomSeries = (props: CustomSeriesProps<number>) => {
   const chart = useYieldCurveChart();
   const paneIdx = usePaneIndex();
-  const [local, options] = splitProps(props, [
+
+  const _props = mergeProps(
+    {
+      primitives: [] as SeriesPrimitive<"Custom", number>[],
+    },
+    props,
+  );
+
+  const [local, options] = splitProps(_props, [
     "data",
+    "primitives",
     "onCreateSeries",
     "onRemoveSeries",
     "onSetData",
@@ -252,6 +283,18 @@ const CustomSeries = (props: CustomSeriesProps<number>) => {
 
     createEffect(() => {
       series.applyOptions(options);
+    });
+
+    createEffect(() => {
+      for (const primitive of local.primitives) {
+        series.attachPrimitive(primitive);
+      }
+
+      onCleanup(() => {
+        for (const primitive of local.primitives) {
+          series.detachPrimitive(primitive);
+        }
+      });
     });
 
     onCleanup(() => {

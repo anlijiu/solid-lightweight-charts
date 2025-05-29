@@ -22,6 +22,7 @@ import type {
   ChartWithPaneState,
   CustomSeriesProps,
   PaneProps,
+  SeriesPrimitive,
   SeriesProps,
 } from "../types";
 
@@ -170,8 +171,16 @@ const Series = <T extends BuiltInSeriesType>(props: SeriesProps<T>) => {
   const chart = useTimeChart();
   const paneIdx = usePaneIndex();
 
-  const [local, options] = splitProps(props, [
+  const _props = mergeProps(
+    {
+      primitives: [] as SeriesPrimitive<T, Time>[],
+    },
+    props,
+  );
+
+  const [local, options] = splitProps(_props, [
     "data",
+    "primitives",
     "onCreateSeries",
     "onRemoveSeries",
     "onSetData",
@@ -192,6 +201,18 @@ const Series = <T extends BuiltInSeriesType>(props: SeriesProps<T>) => {
 
     createEffect(() => {
       series.applyOptions(options);
+    });
+
+    createEffect(() => {
+      for (const primitive of local.primitives) {
+        series.attachPrimitive(primitive);
+      }
+
+      onCleanup(() => {
+        for (const primitive of local.primitives) {
+          series.detachPrimitive(primitive);
+        }
+      });
     });
 
     onCleanup(() => {
@@ -224,8 +245,17 @@ TimeChart.Series = Series;
 const CustomSeries = (props: CustomSeriesProps<Time>) => {
   const chart = useTimeChart();
   const paneIdx = usePaneIndex();
-  const [local, options] = splitProps(props, [
+
+  const _props = mergeProps(
+    {
+      primitives: [] as SeriesPrimitive<"Custom", Time>[],
+    },
+    props,
+  );
+
+  const [local, options] = splitProps(_props, [
     "data",
+    "primitives",
     "onCreateSeries",
     "onRemoveSeries",
     "onSetData",
@@ -243,6 +273,18 @@ const CustomSeries = (props: CustomSeriesProps<Time>) => {
 
     createEffect(() => {
       series.applyOptions(options);
+    });
+
+    createEffect(() => {
+      for (const primitive of local.primitives) {
+        series.attachPrimitive(primitive);
+      }
+
+      onCleanup(() => {
+        for (const primitive of local.primitives) {
+          series.detachPrimitive(primitive);
+        }
+      });
     });
 
     onCleanup(() => {

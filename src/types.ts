@@ -4,6 +4,8 @@ import type {
   IChartApiBase,
   ICustomSeriesPaneView,
   ISeriesApi,
+  ISeriesPrimitiveBase,
+  SeriesAttachedParameter,
   SeriesDataItemTypeMap,
   SeriesPartialOptionsMap,
   SeriesType,
@@ -63,6 +65,10 @@ export type ChartCommonProps<T> = {
   readonly onResize?: (width: number, height: number) => void;
 };
 
+export type SeriesPrimitive<T extends SeriesType, HorzScaleItem = Time> = ISeriesPrimitiveBase<
+  SeriesAttachedParameter<HorzScaleItem, T>
+>;
+
 export type SeriesCommonProps<
   T extends SeriesType,
   HorzScaleItem = Time,
@@ -73,6 +79,13 @@ export type SeriesCommonProps<
   readonly data: SeriesDataItemTypeMap<HorzScaleItem>[T][];
 
   /**
+   * The primitives to be used for the series.
+   *
+   * @see https://tradingview.github.io/lightweight-charts/docs/plugins/series-primitives
+   */
+  readonly primitives?: SeriesPrimitive<T, HorzScaleItem>[];
+
+  /**
    * Callback function that is called when the series is created.
    * @param series - The created line series instance.
    */
@@ -80,7 +93,7 @@ export type SeriesCommonProps<
 
   /**
    * Callback function that is called when the series is removed.
-   * @param series - The created line series instance.
+   * @param series - The removed line series instance.
    */
   readonly onRemoveSeries?: (series: ISeriesApi<T, HorzScaleItem>, paneIndex: number) => void;
 

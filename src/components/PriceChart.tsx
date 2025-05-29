@@ -23,6 +23,7 @@ import type {
   CustomSeriesProps,
   IOptionsChartApi,
   PaneProps,
+  SeriesPrimitive,
   SeriesProps,
 } from "../types";
 
@@ -176,8 +177,17 @@ PriceChart.Pane = Pane;
 const Series = <T extends BuiltInSeriesType>(props: SeriesProps<T, number>) => {
   const chart = useOptionsChart();
   const paneIdx = usePaneIndex();
-  const [local, options] = splitProps(props, [
+
+  const _props = mergeProps(
+    {
+      primitives: [] as SeriesPrimitive<T, number>[],
+    },
+    props,
+  );
+
+  const [local, options] = splitProps(_props, [
     "data",
+    "primitives",
     "onCreateSeries",
     "onRemoveSeries",
     "onSetData",
@@ -185,7 +195,7 @@ const Series = <T extends BuiltInSeriesType>(props: SeriesProps<T, number>) => {
 
   onMount(() => {
     const series = chart().addSeries(
-      SERIES_DEFINITION_MAP[props.type],
+      SERIES_DEFINITION_MAP[_props.type],
       options,
       paneIdx(),
     ) as ISeriesApi<T, number>;
@@ -198,6 +208,18 @@ const Series = <T extends BuiltInSeriesType>(props: SeriesProps<T, number>) => {
 
     createEffect(() => {
       series.applyOptions(options);
+    });
+
+    createEffect(() => {
+      for (const primitive of local.primitives) {
+        series.attachPrimitive(primitive);
+      }
+
+      onCleanup(() => {
+        for (const primitive of local.primitives) {
+          series.detachPrimitive(primitive);
+        }
+      });
     });
 
     onCleanup(() => {
@@ -229,8 +251,17 @@ PriceChart.Series = Series;
 const CustomSeries = (props: CustomSeriesProps<number>) => {
   const chart = useOptionsChart();
   const paneIdx = usePaneIndex();
-  const [local, options] = splitProps(props, [
+
+  const _props = mergeProps(
+    {
+      primitives: [] as SeriesPrimitive<"Custom", number>[],
+    },
+    props,
+  );
+
+  const [local, options] = splitProps(_props, [
     "data",
+    "primitives",
     "onCreateSeries",
     "onRemoveSeries",
     "onSetData",
@@ -248,6 +279,18 @@ const CustomSeries = (props: CustomSeriesProps<number>) => {
 
     createEffect(() => {
       series.applyOptions(options);
+    });
+
+    createEffect(() => {
+      for (const primitive of local.primitives) {
+        series.attachPrimitive(primitive);
+      }
+
+      onCleanup(() => {
+        for (const primitive of local.primitives) {
+          series.detachPrimitive(primitive);
+        }
+      });
     });
 
     onCleanup(() => {
