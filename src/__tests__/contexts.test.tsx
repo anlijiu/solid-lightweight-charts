@@ -4,12 +4,12 @@ import { describe, expect, test, vi } from "vitest";
 import { PriceChart } from "../components/PriceChart";
 import { TimeChart } from "../components/TimeChart";
 import { YieldCurveChart } from "../components/YieldCurveChart";
-import { useChart, useOptionsChart, useYieldCurveChart } from "../contexts/chart";
+import { useOptionsChart, useTimeChart, useYieldCurveChart } from "../contexts/chart";
 import { usePaneIndex } from "../contexts/pane";
 
 // Test components that use the hooks outside of their context providers
 const InvalidTimeChartConsumer = () => {
-  useChart();
+  useTimeChart();
   return <div>Chart context value</div>;
 };
 

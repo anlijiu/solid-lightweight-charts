@@ -14,7 +14,7 @@ import {
 } from "solid-js";
 
 import { SERIES_DEFINITION_MAP } from "../constants";
-import { ChartContext, useChart } from "../contexts/chart";
+import { TimeChartContext, useTimeChart } from "../contexts/chart";
 import { PaneIndexContext, usePaneIndex } from "../contexts/pane";
 import type {
   BuiltInSeriesType,
@@ -125,7 +125,9 @@ export const TimeChart = (props: ParentProps<TimeChartProps>): JSX.Element => {
       />
       <Show when={chart()}>
         {(chart) => (
-          <ChartContext.Provider value={chart}>{containerProps.children}</ChartContext.Provider>
+          <TimeChartContext.Provider value={chart}>
+            {containerProps.children}
+          </TimeChartContext.Provider>
         )}
       </Show>
     </>
@@ -133,7 +135,7 @@ export const TimeChart = (props: ParentProps<TimeChartProps>): JSX.Element => {
 };
 
 const Pane = (props: PaneProps) => {
-  const chart = useChart() as unknown as Accessor<ChartWithPaneState<IChartApi>>;
+  const chart = useTimeChart() as unknown as Accessor<ChartWithPaneState<IChartApi>>;
 
   const paneIdx = createMemo(() => props.index ?? chart().__getNextPaneIndex());
 
@@ -165,7 +167,7 @@ const Pane = (props: PaneProps) => {
 TimeChart.Pane = Pane;
 
 const Series = <T extends BuiltInSeriesType>(props: SeriesProps<T>) => {
-  const chart = useChart();
+  const chart = useTimeChart();
   const paneIdx = usePaneIndex();
 
   const [local, options] = splitProps(props, ["data", "onCreateSeries", "onSetData"]);
@@ -214,7 +216,7 @@ const Series = <T extends BuiltInSeriesType>(props: SeriesProps<T>) => {
 TimeChart.Series = Series;
 
 const CustomSeries = (props: CustomSeriesProps<Time>) => {
-  const chart = useChart();
+  const chart = useTimeChart();
   const paneIdx = usePaneIndex();
   const [local, options] = splitProps(props, ["data", "onCreateSeries", "onSetData", "paneView"]);
 
