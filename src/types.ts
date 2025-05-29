@@ -1,5 +1,8 @@
 import type {
+  CustomData,
+  CustomSeriesOptions,
   IChartApiBase,
+  ICustomSeriesPaneView,
   ISeriesApi,
   SeriesDataItemTypeMap,
   SeriesPartialOptionsMap,
@@ -61,7 +64,7 @@ export type ChartCommonProps<T> = {
 };
 
 export type SeriesCommonProps<
-  T extends BuiltInSeriesType,
+  T extends SeriesType,
   HorzScaleItem = Time,
 > = SeriesPartialOptionsMap[T] & {
   /**
@@ -74,12 +77,21 @@ export type SeriesCommonProps<
    * @param series - The created line series instance.
    */
   readonly onCreateSeries?: (series: ISeriesApi<T, HorzScaleItem>, paneIndex: number) => void;
+
+  /**
+   * Callback function that is called when the series data is set. Listening to this callback can be useful
+   * for when you want to make use of the [createSeriesMarker](https://tradingview.github.io/lightweight-charts/tutorials/how_to/series-markers) API
+   * to generate custom markers based on the data within the series.
+   *
+   * @param params - An object containing the series instance and the data being set
+   */
+  readonly onSetData?: (params: OnSetDataParams<T, HorzScaleItem>) => void;
 };
 
 /**
  * Parameters passed to the onSetData callback function
  */
-export type OnSetDataParams<T extends BuiltInSeriesType, HorzScaleItem = Time> = {
+export type OnSetDataParams<T extends SeriesType, HorzScaleItem = Time> = {
   /**
    * The series instance that had data set on it
    */
@@ -99,15 +111,14 @@ export type SeriesProps<T extends BuiltInSeriesType, HorzScaleItem = Time> = Ser
    * The type of the series.
    */
   readonly type: T;
+};
 
-  /**
-   * Callback function that is called when the series data is set. Listening to this callback can be useful
-   * for when you want to make use of the [createSeriesMarker](https://tradingview.github.io/lightweight-charts/tutorials/how_to/series-markers) API
-   * to generate custom markers based on the data within the series.
-   *
-   * @param params - An object containing the series instance and the data being set
-   */
-  readonly onSetData?: (params: OnSetDataParams<T, HorzScaleItem>) => void;
+export type CustomSeriesProps<HorzScaleItem = Time> = SeriesCommonProps<"Custom", HorzScaleItem> & {
+  readonly paneView: ICustomSeriesPaneView<
+    HorzScaleItem,
+    CustomData<HorzScaleItem>,
+    CustomSeriesOptions
+  >;
 };
 
 export type PaneProps = {

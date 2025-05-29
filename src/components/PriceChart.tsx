@@ -1,4 +1,4 @@
-import { createOptionsChart, type ISeriesApi } from "lightweight-charts";
+import { createOptionsChart, type ISeriesApi, type SeriesType } from "lightweight-charts";
 import {
   type Accessor,
   createEffect,
@@ -17,9 +17,9 @@ import { SERIES_DEFINITION_MAP } from "../constants";
 import { OptionsChartContext, useOptionsChart } from "../contexts/chart";
 import { PaneIndexContext, usePaneIndex } from "../contexts/pane";
 import type {
-  BuiltInSeriesType,
   ChartCommonProps,
   ChartWithPaneState,
+  CustomSeriesProps,
   IOptionsChartApi,
   PaneProps,
   SeriesProps,
@@ -172,7 +172,7 @@ const Pane = (props: PaneProps) => {
  */
 PriceChart.Pane = Pane;
 
-const Series = <T extends BuiltInSeriesType>(props: SeriesProps<T, number>) => {
+const Series = <T extends Exclude<SeriesType, "Custom">>(props: SeriesProps<T, number>) => {
   const chart = useOptionsChart();
   const paneIdx = usePaneIndex();
   const [local, options] = splitProps(props, ["data", "onCreateSeries", "onSetData"]);
@@ -214,3 +214,44 @@ const Series = <T extends BuiltInSeriesType>(props: SeriesProps<T, number>) => {
  * @see https://tradingview.github.io/lightweight-charts/docs/api/interfaces/IOptionsChartApi
  */
 PriceChart.Series = Series;
+
+const CustomSeries = (props: CustomSeriesProps<number>) => {
+  const chart = useOptionsChart();
+  const paneIdx = usePaneIndex();
+  const [local, options] = splitProps(props, ["data", "onCreateSeries", "onSetData", "paneView"]);
+
+  onMount(() => {
+    const series = chart().addCustomSeries(local.paneView, options, paneIdx());
+    local.onCreateSeries?.(series, paneIdx());
+
+    createEffect(() => {
+      series.setData(local.data);
+      local.onSetData?.({ series, data: local.data });
+    });
+
+    createEffect(() => {
+      series.applyOptions(options);
+    });
+
+    onCleanup(() => {
+      chart().removeSeries(series);
+    });
+  });
+
+  return null;
+};
+
+/**
+ * A custom series component for the `PriceChart`, used to render data points
+ * over price-based X-axis values (e.g., prices and values).
+ *
+ * @param props.paneView - The required pane view for the custom series -- defines the basic functionality and structure required for creating a custom series view.
+ * @param props.data - Numeric X-axis data to render (e.g., prices and values).
+ * @param props.primitives - Optional [primitives](https://tradingview.github.io/lightweight-charts/docs/plugins/series-primitives) to attach to the series.
+ * @param props.onCreateSeries - Callback fired with the internal `ISeriesApi` instance.
+ * @param props.onRemoveSeries - Callback fired with the internal `ISeriesApi` instance.
+ * @param props.onSetData - Optional callback fired after `setData()` is called.
+ *
+ * @see https://tradingview.github.io/lightweight-charts/docs/plugins/custom_series
+ */
+PriceChart.CustomSeries = CustomSeries;

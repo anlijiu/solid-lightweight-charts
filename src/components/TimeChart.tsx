@@ -1,4 +1,4 @@
-import { createChart, type IChartApi, type ISeriesApi } from "lightweight-charts";
+import { createChart, type IChartApi, type ISeriesApi, type Time } from "lightweight-charts";
 import {
   type Accessor,
   createEffect,
@@ -20,6 +20,7 @@ import type {
   BuiltInSeriesType,
   ChartCommonProps,
   ChartWithPaneState,
+  CustomSeriesProps,
   PaneProps,
   SeriesProps,
 } from "../types";
@@ -211,3 +212,44 @@ const Series = <T extends BuiltInSeriesType>(props: SeriesProps<T>) => {
  * @see https://tradingview.github.io/lightweight-charts/docs/series-types
  */
 TimeChart.Series = Series;
+
+const CustomSeries = (props: CustomSeriesProps<Time>) => {
+  const chart = useChart();
+  const paneIdx = usePaneIndex();
+  const [local, options] = splitProps(props, ["data", "onCreateSeries", "onSetData", "paneView"]);
+
+  onMount(() => {
+    const series = chart().addCustomSeries(local.paneView, options, paneIdx());
+    local.onCreateSeries?.(series, paneIdx());
+
+    createEffect(() => {
+      series.setData(local.data);
+      local.onSetData?.({ series, data: local.data });
+    });
+
+    createEffect(() => {
+      series.applyOptions(options);
+    });
+
+    onCleanup(() => {
+      chart().removeSeries(series);
+    });
+  });
+
+  return null;
+};
+
+/**
+ * A custom series component for the `TimeChart`, used to render data points
+ * over time-based X-axis values (e.g., dates and values).
+ *
+ * @param props.paneView - The required pane view for the custom series -- defines the basic functionality and structure required for creating a custom series view.
+ * @param props.data - Time-series data to render (e.g., dates and values).
+ * @param props.primitives - Optional [primitives](https://tradingview.github.io/lightweight-charts/docs/plugins/series-primitives) to attach to the series.
+ * @param props.onCreateSeries - Callback fired with the internal `ISeriesApi` instance.
+ * @param props.onRemoveSeries - Callback fired with the internal `ISeriesApi` instance.
+ * @param props.onSetData - Optional callback fired after `setData()` is called.
+ *
+ * @see https://tradingview.github.io/lightweight-charts/docs/plugins/custom_series
+ */
+TimeChart.CustomSeries = CustomSeries;

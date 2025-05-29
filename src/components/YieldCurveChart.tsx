@@ -22,7 +22,13 @@ import {
 import { SERIES_DEFINITION_MAP } from "../constants";
 import { useYieldCurveChart, YieldCurveChartContext } from "../contexts/chart";
 import { PaneIndexContext, usePaneIndex } from "../contexts/pane";
-import type { ChartCommonProps, ChartWithPaneState, PaneProps, SeriesProps } from "../types";
+import type {
+  ChartCommonProps,
+  ChartWithPaneState,
+  CustomSeriesProps,
+  PaneProps,
+  SeriesProps,
+} from "../types";
 
 type YieldCurveChartOptions = NonNullable<Parameters<typeof createYieldCurveChart>[1]>;
 
@@ -209,9 +215,52 @@ const Series = <T extends YieldCurveSeriesType>(props: SeriesProps<T, number>) =
  *
  * @param props.type - Series type (e.g., `"Line"`, `"Area"`).
  * @param props.data - Numeric X-axis data to render (e.g., durations and values).
+ * @param props.primitives - Optional [primitives](https://tradingview.github.io/lightweight-charts/docs/plugins/series-primitives) to attach to the series.
  * @param props.onCreateSeries - Callback fired with the internal `ISeriesApi` instance.
+ * @param props.onRemoveSeries - Callback fired with the internal `ISeriesApi` instance.
  * @param props.onSetData - Optional callback fired after `setData()` is called.
  *
  * @see https://tradingview.github.io/lightweight-charts/docs/api/interfaces/IYieldCurveChartApi
  */
 YieldCurveChart.Series = Series;
+
+const CustomSeries = (props: CustomSeriesProps<number>) => {
+  const chart = useYieldCurveChart();
+  const paneIdx = usePaneIndex();
+  const [local, options] = splitProps(props, ["data", "onCreateSeries", "onSetData", "paneView"]);
+
+  onMount(() => {
+    const series = chart().addCustomSeries(local.paneView, options, paneIdx());
+    local.onCreateSeries?.(series, paneIdx());
+
+    createEffect(() => {
+      series.setData(local.data);
+      local.onSetData?.({ series, data: local.data });
+    });
+
+    createEffect(() => {
+      series.applyOptions(options);
+    });
+
+    onCleanup(() => {
+      chart().removeSeries(series);
+    });
+  });
+
+  return null;
+};
+
+/**
+ * A custom series component for the `YieldCurveChart`, used to render data points
+ * over duration-based X-axis values (e.g., months to maturity).
+ *
+ * @param props.paneView - The required pane view for the custom series -- defines the basic functionality and structure required for creating a custom series view..
+ * @param props.data - Numeric X-axis data to render (e.g., durations and values).
+ * @param props.primitives - Optional [primitives](https://tradingview.github.io/lightweight-charts/docs/plugins/series-primitives) to attach to the series.
+ * @param props.onCreateSeries - Callback fired with the internal `ISeriesApi` instance.
+ * @param props.onRemoveSeries - Callback fired with the internal `ISeriesApi` instance.
+ * @param props.onSetData - Optional callback fired after `setData()` is called.
+ *
+ * @see https://tradingview.github.io/lightweight-charts/docs/plugins/custom_series
+ */
+YieldCurveChart.CustomSeries = CustomSeries;
