@@ -170,7 +170,12 @@ const Series = <T extends BuiltInSeriesType>(props: SeriesProps<T>) => {
   const chart = useTimeChart();
   const paneIdx = usePaneIndex();
 
-  const [local, options] = splitProps(props, ["data", "onCreateSeries", "onSetData"]);
+  const [local, options] = splitProps(props, [
+    "data",
+    "onCreateSeries",
+    "onRemoveSeries",
+    "onSetData",
+  ]);
 
   onMount(() => {
     const series = chart().addSeries(
@@ -191,6 +196,7 @@ const Series = <T extends BuiltInSeriesType>(props: SeriesProps<T>) => {
 
     onCleanup(() => {
       chart().removeSeries(series);
+      local.onRemoveSeries?.(series, paneIdx());
     });
   });
 
@@ -218,7 +224,13 @@ TimeChart.Series = Series;
 const CustomSeries = (props: CustomSeriesProps<Time>) => {
   const chart = useTimeChart();
   const paneIdx = usePaneIndex();
-  const [local, options] = splitProps(props, ["data", "onCreateSeries", "onSetData", "paneView"]);
+  const [local, options] = splitProps(props, [
+    "data",
+    "onCreateSeries",
+    "onRemoveSeries",
+    "onSetData",
+    "paneView",
+  ]);
 
   onMount(() => {
     const series = chart().addCustomSeries(local.paneView, options, paneIdx());
@@ -235,6 +247,7 @@ const CustomSeries = (props: CustomSeriesProps<Time>) => {
 
     onCleanup(() => {
       chart().removeSeries(series);
+      local.onRemoveSeries?.(series, paneIdx());
     });
   });
 

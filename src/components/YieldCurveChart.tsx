@@ -180,16 +180,21 @@ YieldCurveChart.Pane = Pane;
 const Series = <T extends YieldCurveSeriesType>(props: SeriesProps<T, number>) => {
   const chart = useYieldCurveChart();
   const paneIdx = usePaneIndex();
-  const [local, options] = splitProps(props, ["data", "onCreateSeries", "onSetData"]);
+  const [local, options] = splitProps(props, [
+    "data",
+    "onCreateSeries",
+    "onRemoveSeries",
+    "onSetData",
+  ]);
 
   onMount(() => {
     const seriesDef = SERIES_DEFINITION_MAP[props.type] as SeriesDefinition<YieldCurveSeriesType>;
-    const series = chart().addSeries(seriesDef, options, paneIdx());
-    local.onCreateSeries?.(series as ISeriesApi<T, number>, paneIdx());
+    const series = chart().addSeries(seriesDef, options, paneIdx()) as ISeriesApi<T, number>;
+    local.onCreateSeries?.(series, paneIdx());
 
     createEffect(() => {
       series.setData(local.data);
-      local.onSetData?.({ series: series as ISeriesApi<T, number>, data: local.data });
+      local.onSetData?.({ series, data: local.data });
     });
 
     createEffect(() => {
@@ -198,6 +203,7 @@ const Series = <T extends YieldCurveSeriesType>(props: SeriesProps<T, number>) =
 
     onCleanup(() => {
       chart().removeSeries(series);
+      local.onRemoveSeries?.(series, paneIdx());
     });
   });
 
@@ -227,7 +233,13 @@ YieldCurveChart.Series = Series;
 const CustomSeries = (props: CustomSeriesProps<number>) => {
   const chart = useYieldCurveChart();
   const paneIdx = usePaneIndex();
-  const [local, options] = splitProps(props, ["data", "onCreateSeries", "onSetData", "paneView"]);
+  const [local, options] = splitProps(props, [
+    "data",
+    "onCreateSeries",
+    "onRemoveSeries",
+    "onSetData",
+    "paneView",
+  ]);
 
   onMount(() => {
     const series = chart().addCustomSeries(local.paneView, options, paneIdx());
@@ -244,6 +256,7 @@ const CustomSeries = (props: CustomSeriesProps<number>) => {
 
     onCleanup(() => {
       chart().removeSeries(series);
+      local.onRemoveSeries?.(series, paneIdx());
     });
   });
 

@@ -1,4 +1,4 @@
-import { createOptionsChart, type ISeriesApi, type SeriesType } from "lightweight-charts";
+import { createOptionsChart, type ISeriesApi } from "lightweight-charts";
 import {
   type Accessor,
   createEffect,
@@ -17,6 +17,7 @@ import { SERIES_DEFINITION_MAP } from "../constants";
 import { OptionsChartContext, useOptionsChart } from "../contexts/chart";
 import { PaneIndexContext, usePaneIndex } from "../contexts/pane";
 import type {
+  BuiltInSeriesType,
   ChartCommonProps,
   ChartWithPaneState,
   CustomSeriesProps,
@@ -172,18 +173,27 @@ const Pane = (props: PaneProps) => {
  */
 PriceChart.Pane = Pane;
 
-const Series = <T extends Exclude<SeriesType, "Custom">>(props: SeriesProps<T, number>) => {
+const Series = <T extends BuiltInSeriesType>(props: SeriesProps<T, number>) => {
   const chart = useOptionsChart();
   const paneIdx = usePaneIndex();
-  const [local, options] = splitProps(props, ["data", "onCreateSeries", "onSetData"]);
+  const [local, options] = splitProps(props, [
+    "data",
+    "onCreateSeries",
+    "onRemoveSeries",
+    "onSetData",
+  ]);
 
   onMount(() => {
-    const series = chart().addSeries(SERIES_DEFINITION_MAP[props.type], options, paneIdx());
-    local.onCreateSeries?.(series as ISeriesApi<T, number>, paneIdx());
+    const series = chart().addSeries(
+      SERIES_DEFINITION_MAP[props.type],
+      options,
+      paneIdx(),
+    ) as ISeriesApi<T, number>;
+    local.onCreateSeries?.(series, paneIdx());
 
     createEffect(() => {
       series.setData(local.data);
-      local.onSetData?.({ series: series as ISeriesApi<T, number>, data: local.data });
+      local.onSetData?.({ series, data: local.data });
     });
 
     createEffect(() => {
@@ -192,6 +202,7 @@ const Series = <T extends Exclude<SeriesType, "Custom">>(props: SeriesProps<T, n
 
     onCleanup(() => {
       chart().removeSeries(series);
+      local.onRemoveSeries?.(series, paneIdx());
     });
   });
 
@@ -218,7 +229,13 @@ PriceChart.Series = Series;
 const CustomSeries = (props: CustomSeriesProps<number>) => {
   const chart = useOptionsChart();
   const paneIdx = usePaneIndex();
-  const [local, options] = splitProps(props, ["data", "onCreateSeries", "onSetData", "paneView"]);
+  const [local, options] = splitProps(props, [
+    "data",
+    "onCreateSeries",
+    "onRemoveSeries",
+    "onSetData",
+    "paneView",
+  ]);
 
   onMount(() => {
     const series = chart().addCustomSeries(local.paneView, options, paneIdx());
@@ -235,6 +252,7 @@ const CustomSeries = (props: CustomSeriesProps<number>) => {
 
     onCleanup(() => {
       chart().removeSeries(series);
+      local.onRemoveSeries?.(series, paneIdx());
     });
   });
 

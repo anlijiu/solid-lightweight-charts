@@ -79,6 +79,12 @@ export type SeriesCommonProps<
   readonly onCreateSeries?: (series: ISeriesApi<T, HorzScaleItem>, paneIndex: number) => void;
 
   /**
+   * Callback function that is called when the series is removed.
+   * @param series - The created line series instance.
+   */
+  readonly onRemoveSeries?: (series: ISeriesApi<T, HorzScaleItem>, paneIndex: number) => void;
+
+  /**
    * Callback function that is called when the series data is set. Listening to this callback can be useful
    * for when you want to make use of the [createSeriesMarker](https://tradingview.github.io/lightweight-charts/tutorials/how_to/series-markers) API
    * to generate custom markers based on the data within the series.
