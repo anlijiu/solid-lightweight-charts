@@ -1,5 +1,11 @@
 # @dschz/solid-lightweight-charts
 
+## 0.2.2
+
+### Patch Changes
+
+- Supports adding pane primitives to root chart panes
+
 ## 0.2.1
 
 ### Patch Changes
