@@ -3,15 +3,18 @@ import type {
   CustomSeriesOptions,
   IChartApiBase,
   ICustomSeriesPaneView,
+  IPaneApi,
+  IPanePrimitive,
   ISeriesApi,
   ISeriesPrimitiveBase,
   SeriesAttachedParameter,
   SeriesDataItemTypeMap,
+  SeriesMarker,
   SeriesPartialOptionsMap,
   SeriesType,
   Time,
 } from "lightweight-charts";
-import type { JSX } from "solid-js";
+import type { Accessor, JSX } from "solid-js";
 
 // Special internal type to track the next pane index for chart instances
 export type ChartWithPaneState<T> = T & {
@@ -65,6 +68,18 @@ export type ChartCommonProps<T> = {
   readonly onResize?: (width: number, height: number) => void;
 };
 
+/**
+ * The type for the Lightweight Charts pane primitive object.
+ *
+ * @see https://tradingview.github.io/lightweight-charts/docs/plugins/pane-primitives
+ */
+export type PanePrimitive<HorzScaleItem = Time> = IPanePrimitive<HorzScaleItem>;
+
+/**
+ * The type for the Lightweight Charts series primitive object.
+ *
+ * @see https://tradingview.github.io/lightweight-charts/docs/plugins/series-primitives
+ */
 export type SeriesPrimitive<T extends SeriesType, HorzScaleItem = Time> = ISeriesPrimitiveBase<
   SeriesAttachedParameter<HorzScaleItem, T>
 >;
@@ -86,6 +101,13 @@ export type SeriesCommonProps<
   readonly primitives?: SeriesPrimitive<T, HorzScaleItem>[];
 
   /**
+   * The markers to be used for the series.
+   */
+  readonly markers?: (
+    data: SeriesDataItemTypeMap<HorzScaleItem>[T][],
+  ) => SeriesMarker<HorzScaleItem>[];
+
+  /**
    * Callback function that is called when the series is created.
    * @param series - The created line series instance.
    */
@@ -105,6 +127,24 @@ export type SeriesCommonProps<
    * @param params - An object containing the series instance and the data being set
    */
   readonly onSetData?: (params: OnSetDataParams<T, HorzScaleItem>) => void;
+
+  /**
+   * Callback function that is called when the series markers are set.
+   * @param markers - The markers that were set on the series
+   */
+  readonly onSetMarkers?: (markers: SeriesMarker<HorzScaleItem>[]) => void;
+
+  /**
+   * Callback function that is called when the series primitives are attached.
+   * @param primitives - The primitives that were attached to the series
+   */
+  readonly onAttachPrimitives?: (primitives: SeriesPrimitive<T, HorzScaleItem>[]) => void;
+
+  /**
+   * Callback function that is called when the series primitives are detached.
+   * @param primitives - The primitives that were detached from the series
+   */
+  readonly onDetachPrimitives?: (primitives: SeriesPrimitive<T, HorzScaleItem>[]) => void;
 };
 
 /**
@@ -122,6 +162,9 @@ export type OnSetDataParams<T extends SeriesType, HorzScaleItem = Time> = {
   readonly data: SeriesDataItemTypeMap<HorzScaleItem>[T][];
 };
 
+/**
+ * Props for the Lightweight Charts Series component.
+ */
 export type SeriesProps<T extends BuiltInSeriesType, HorzScaleItem = Time> = SeriesCommonProps<
   T,
   HorzScaleItem
@@ -132,15 +175,69 @@ export type SeriesProps<T extends BuiltInSeriesType, HorzScaleItem = Time> = Ser
   readonly type: T;
 };
 
+/**
+ * The type for the Lightweight Charts custom series pane view object.
+ *
+ * @see https://tradingview.github.io/lightweight-charts/docs/plugins/custom_series
+ */
+export type CustomSeriesPaneView<HorzScaleItem = Time> = ICustomSeriesPaneView<
+  HorzScaleItem,
+  CustomData<HorzScaleItem>,
+  CustomSeriesOptions
+>;
+
+/**
+ * Props for the Lightweight Charts Custom Series component.
+ *
+ * @see https://tradingview.github.io/lightweight-charts/docs/plugins/custom_series
+ */
 export type CustomSeriesProps<HorzScaleItem = Time> = SeriesCommonProps<"Custom", HorzScaleItem> & {
-  readonly paneView: ICustomSeriesPaneView<
-    HorzScaleItem,
-    CustomData<HorzScaleItem>,
-    CustomSeriesOptions
-  >;
+  readonly paneView: CustomSeriesPaneView<HorzScaleItem>;
 };
 
-export type PaneProps = {
+export type PaneContextType<HorzScaleItem = Time> = {
+  readonly paneIdx: Accessor<number>;
+  readonly panePrimitives: Accessor<PanePrimitive<HorzScaleItem>[]>;
+  readonly attachPanePrimitives: (
+    primitives: PanePrimitive<HorzScaleItem>[],
+    pane?: IPaneApi<HorzScaleItem>,
+  ) => void;
+  readonly detachPanePrimitives: (
+    primitives: PanePrimitive<HorzScaleItem>[],
+    pane?: IPaneApi<HorzScaleItem>,
+  ) => void;
+};
+
+/**
+ * Props for the Lightweight Charts Pane component.
+ */
+export type PaneProps<HorzScaleItem = Time> = {
+  /**
+   * The index of the pane.
+   */
   readonly index?: number;
+
+  /**
+   * The children of the pane.
+   */
   readonly children: JSX.Element;
+
+  /**
+   * The primitives to be used for the pane.
+   *
+   * @see https://tradingview.github.io/lightweight-charts/docs/plugins/pane-primitives
+   */
+  readonly primitives?: PanePrimitive<HorzScaleItem>[];
+
+  /**
+   * Callback function that is called when the pane primitives are attached.
+   * @param primitives - The primitives that were attached to the pane
+   */
+  readonly onAttachPrimitives?: (primitives: PanePrimitive<HorzScaleItem>[]) => void;
+
+  /**
+   * Callback function that is called when the pane primitives are detached.
+   * @param primitives - The primitives that were detached from the pane
+   */
+  readonly onDetachPrimitives?: (primitives: PanePrimitive<HorzScaleItem>[]) => void;
 };

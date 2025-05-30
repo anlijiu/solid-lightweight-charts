@@ -1,6 +1,13 @@
-import { createOptionsChart, type ISeriesApi } from "lightweight-charts";
+import {
+  createOptionsChart,
+  createSeriesMarkers,
+  type IPaneApi,
+  type ISeriesApi,
+  type SeriesMarker,
+} from "lightweight-charts";
 import {
   type Accessor,
+  createContext,
   createEffect,
   createMemo,
   createSignal,
@@ -11,21 +18,23 @@ import {
   type ParentProps,
   Show,
   splitProps,
+  useContext,
 } from "solid-js";
 
-import { SERIES_DEFINITION_MAP } from "../constants";
-import { OptionsChartContext, useOptionsChart } from "../contexts/chart";
-import { PaneIndexContext, usePaneIndex } from "../contexts/pane";
+import { SERIES_DEFINITION_MAP } from "./constants";
+import { PriceChartContext, usePriceChart } from "./contexts/chart";
 import type {
   BuiltInSeriesType,
   ChartCommonProps,
   ChartWithPaneState,
   CustomSeriesProps,
   IOptionsChartApi,
+  PaneContextType,
+  PanePrimitive,
   PaneProps,
   SeriesPrimitive,
   SeriesProps,
-} from "../types";
+} from "./types";
 
 type OptionsChartOptions = NonNullable<Parameters<typeof createOptionsChart>[1]>;
 
@@ -134,25 +143,67 @@ export const PriceChart = (props: ParentProps<OptionsChartProps>): JSX.Element =
       />
       <Show when={chart()}>
         {(chart) => (
-          <OptionsChartContext.Provider value={chart}>
+          <PriceChartContext.Provider value={chart}>
             {containerProps.children}
-          </OptionsChartContext.Provider>
+          </PriceChartContext.Provider>
         )}
       </Show>
     </>
   );
 };
 
-const Pane = (props: PaneProps) => {
-  const chart = useOptionsChart() as unknown as Accessor<ChartWithPaneState<IOptionsChartApi>>;
+const PaneContext = createContext<PaneContextType<number>>({
+  paneIdx: () => 0,
+  panePrimitives: () => [],
+  attachPanePrimitives: () => {},
+  detachPanePrimitives: () => {},
+});
 
-  const paneIdx = createMemo(() => props.index ?? chart().__getNextPaneIndex());
+const Pane = (props: PaneProps<number>) => {
+  const chart = usePriceChart() as unknown as Accessor<ChartWithPaneState<IOptionsChartApi>>;
 
-  onCleanup(() => {
-    chart().removePane(paneIdx());
-  });
+  const _props = mergeProps(
+    {
+      primitives: [] as PanePrimitive<number>[],
+    },
+    props,
+  );
 
-  return <PaneIndexContext.Provider value={paneIdx}>{props.children}</PaneIndexContext.Provider>;
+  const paneIdx = createMemo(() => _props.index ?? chart().__getNextPaneIndex());
+  const panePrimitives = () => _props.primitives;
+
+  const attachPanePrimitives = (primitives: PanePrimitive<number>[], pane?: IPaneApi<number>) => {
+    if (!pane) return;
+
+    // Since pane primitives are reactive, we need to detach them first to avoid unnecessary re-attachments
+    for (const primitive of primitives) {
+      pane.detachPrimitive(primitive);
+    }
+
+    for (const primitive of primitives) {
+      pane.attachPrimitive(primitive);
+    }
+
+    _props.onAttachPrimitives?.(primitives);
+  };
+
+  const detachPanePrimitives = (primitives: PanePrimitive<number>[], pane?: IPaneApi<number>) => {
+    if (!pane) return;
+
+    for (const primitive of primitives) {
+      pane.detachPrimitive(primitive);
+    }
+
+    _props.onDetachPrimitives?.(primitives);
+  };
+
+  return (
+    <PaneContext.Provider
+      value={{ paneIdx, panePrimitives, attachPanePrimitives, detachPanePrimitives }}
+    >
+      {props.children}
+    </PaneContext.Provider>
+  );
 };
 
 /**
@@ -175,12 +226,14 @@ const Pane = (props: PaneProps) => {
 PriceChart.Pane = Pane;
 
 const Series = <T extends BuiltInSeriesType>(props: SeriesProps<T, number>) => {
-  const chart = useOptionsChart();
-  const paneIdx = usePaneIndex();
+  const chart = usePriceChart();
+  const { paneIdx, panePrimitives, attachPanePrimitives, detachPanePrimitives } =
+    useContext(PaneContext);
 
   const _props = mergeProps(
     {
       primitives: [] as SeriesPrimitive<T, number>[],
+      markers: () => [] as SeriesMarker<number>[],
     },
     props,
   );
@@ -188,9 +241,13 @@ const Series = <T extends BuiltInSeriesType>(props: SeriesProps<T, number>) => {
   const [local, options] = splitProps(_props, [
     "data",
     "primitives",
+    "markers",
     "onCreateSeries",
     "onRemoveSeries",
     "onSetData",
+    "onSetMarkers",
+    "onAttachPrimitives",
+    "onDetachPrimitives",
   ]);
 
   onMount(() => {
@@ -201,25 +258,47 @@ const Series = <T extends BuiltInSeriesType>(props: SeriesProps<T, number>) => {
     ) as ISeriesApi<T, number>;
     local.onCreateSeries?.(series, paneIdx());
 
+    const seriesPane = chart().panes()[paneIdx()];
+
     createEffect(() => {
       series.setData(local.data);
       local.onSetData?.({ series, data: local.data });
+
+      const dataMarkers = local.markers(local.data);
+      createSeriesMarkers(series, dataMarkers);
+      local.onSetMarkers?.(dataMarkers);
+    });
+
+    createEffect(() => {
+      const currentPanePrimitives = panePrimitives();
+
+      attachPanePrimitives(currentPanePrimitives, seriesPane);
+
+      onCleanup(() => {
+        detachPanePrimitives(currentPanePrimitives, seriesPane);
+      });
+    });
+
+    createEffect(() => {
+      const currentPrimitives = local.primitives;
+
+      for (const primitive of currentPrimitives) {
+        series.attachPrimitive(primitive);
+      }
+
+      local.onAttachPrimitives?.(currentPrimitives);
+
+      onCleanup(() => {
+        for (const primitive of currentPrimitives) {
+          series.detachPrimitive(primitive);
+        }
+
+        local.onDetachPrimitives?.(currentPrimitives);
+      });
     });
 
     createEffect(() => {
       series.applyOptions(options);
-    });
-
-    createEffect(() => {
-      for (const primitive of local.primitives) {
-        series.attachPrimitive(primitive);
-      }
-
-      onCleanup(() => {
-        for (const primitive of local.primitives) {
-          series.detachPrimitive(primitive);
-        }
-      });
     });
 
     onCleanup(() => {
@@ -249,8 +328,9 @@ const Series = <T extends BuiltInSeriesType>(props: SeriesProps<T, number>) => {
 PriceChart.Series = Series;
 
 const CustomSeries = (props: CustomSeriesProps<number>) => {
-  const chart = useOptionsChart();
-  const paneIdx = usePaneIndex();
+  const chart = usePriceChart();
+  const { paneIdx, panePrimitives, attachPanePrimitives, detachPanePrimitives } =
+    useContext(PaneContext);
 
   const _props = mergeProps(
     {
@@ -266,11 +346,15 @@ const CustomSeries = (props: CustomSeriesProps<number>) => {
     "onRemoveSeries",
     "onSetData",
     "paneView",
+    "onAttachPrimitives",
+    "onDetachPrimitives",
   ]);
 
   onMount(() => {
     const series = chart().addCustomSeries(local.paneView, options, paneIdx());
     local.onCreateSeries?.(series, paneIdx());
+
+    const seriesPane = chart().panes()[paneIdx()];
 
     createEffect(() => {
       series.setData(local.data);
@@ -278,19 +362,35 @@ const CustomSeries = (props: CustomSeriesProps<number>) => {
     });
 
     createEffect(() => {
-      series.applyOptions(options);
+      const currentPanePrimitives = panePrimitives();
+
+      attachPanePrimitives(currentPanePrimitives, seriesPane);
+
+      onCleanup(() => {
+        detachPanePrimitives(currentPanePrimitives, seriesPane);
+      });
     });
 
     createEffect(() => {
-      for (const primitive of local.primitives) {
+      const currentPrimitives = local.primitives;
+
+      for (const primitive of currentPrimitives) {
         series.attachPrimitive(primitive);
       }
 
+      local.onAttachPrimitives?.(currentPrimitives);
+
       onCleanup(() => {
-        for (const primitive of local.primitives) {
+        for (const primitive of currentPrimitives) {
           series.detachPrimitive(primitive);
         }
+
+        local.onDetachPrimitives?.(currentPrimitives);
       });
+    });
+
+    createEffect(() => {
+      series.applyOptions(options);
     });
 
     onCleanup(() => {

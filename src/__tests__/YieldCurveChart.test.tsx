@@ -4,7 +4,7 @@ import { createSeriesMarkers } from "lightweight-charts";
 import { createSignal } from "solid-js";
 import { describe, expect, test, vi } from "vitest";
 
-import { YieldCurveChart } from "../components/YieldCurveChart";
+import { YieldCurveChart } from "../YieldCurveChart";
 
 describe("CHART: YieldCurveChart", () => {
   test("creates the lightweight-charts container", () => {
@@ -14,6 +14,12 @@ describe("CHART: YieldCurveChart", () => {
     expect(container.querySelector(".tv-lightweight-charts")).toBeInTheDocument();
 
     expect(onCreateChartMock).toHaveBeenCalled();
+  });
+
+  test("throws when series is rendered outside of chart", async () => {
+    expect(() => render(() => <YieldCurveChart.Series type="Line" data={[]} />)).toThrow(
+      "[solid-lightweight-charts] No parent YieldCurveChart component found!",
+    );
   });
 
   test("applies custom class and style", () => {
@@ -84,6 +90,33 @@ describe("CHART: YieldCurveChart", () => {
     expect(onResizeMock).toHaveBeenCalledWith(1000, 500);
   });
 
+  test("does not resize when autoSize is true", () => {
+    let _yieldCurveChart: IYieldCurveChartApi;
+
+    const [dimensions, setDimensions] = createSignal({
+      width: 800,
+      height: 400,
+    });
+
+    render(() => (
+      <YieldCurveChart
+        autoSize={true}
+        width={dimensions().width}
+        height={dimensions().height}
+        onCreateChart={(chart) => {
+          _yieldCurveChart = chart;
+          vi.spyOn(_yieldCurveChart, "resize");
+        }}
+      />
+    ));
+
+    expect(_yieldCurveChart!).toBeDefined();
+
+    setDimensions({ width: 1000, height: 500 });
+
+    expect(_yieldCurveChart!.resize).not.toHaveBeenCalled();
+  });
+
   test("renders a series", async () => {
     // YieldCurveChart uses numeric time values (similar to PriceChart)
     const testData = [
@@ -135,29 +168,83 @@ describe("CHART: YieldCurveChart", () => {
   });
 
   test("renders multiple series", async () => {
-    render(() => (
+    const { container } = render(() => (
       <YieldCurveChart>
-        <YieldCurveChart.Series type="Line" data={[{ time: 0, value: 2.5 }]} />
-        <YieldCurveChart.Series type="Area" data={[{ time: 0, value: 2.0 }]} />
+        <YieldCurveChart.Series type="Line" data={[{ time: 0, value: 100 }]} />
+        <YieldCurveChart.Series type="Area" data={[{ time: 0, value: 90 }]} />
       </YieldCurveChart>
     ));
 
-    // The test passes if rendering completes without errors
-    expect(true).toBe(true);
+    // Verify the chart container is present
+    expect(container.querySelector(".tv-lightweight-charts")).toBeInTheDocument();
+
+    // Verify the table structure for chart rendering
+    const table = container.querySelector("table");
+    expect(table).toBeInTheDocument();
+
+    // Should have canvas elements for rendering the series
+    const canvases = container.querySelectorAll("canvas");
+    expect(canvases.length).toBeGreaterThan(0);
   });
 
   test("renders a pane with series", async () => {
-    render(() => (
+    const { container } = render(() => (
       <YieldCurveChart>
-        <YieldCurveChart.Series type="Line" data={[{ time: 0, value: 2.5 }]} />
+        <YieldCurveChart.Series type="Line" data={[{ time: 0, value: 100 }]} />
         <YieldCurveChart.Pane>
-          <YieldCurveChart.Series type="Area" data={[{ time: 0, value: 2.0 }]} />
+          <YieldCurveChart.Series type="Area" data={[{ time: 0, value: 1000 }]} />
         </YieldCurveChart.Pane>
       </YieldCurveChart>
     ));
 
-    // The test passes if rendering completes without errors
-    expect(true).toBe(true);
+    await waitFor(() => {
+      // Verify the chart container is present
+      expect(container.querySelector(".tv-lightweight-charts")).toBeInTheDocument();
+
+      // Verify the table structure
+      const table = container.querySelector("table");
+      expect(table).toBeInTheDocument();
+
+      // Should have multiple rows for different panes
+      const tableRows = table!.querySelectorAll("tr");
+      expect(tableRows.length).toBeGreaterThan(1);
+
+      // Should have a pane separator (1px height row) between panes
+      const paneSeparator = Array.from(tableRows).find((row) => row.style.height === "1px");
+      expect(paneSeparator).toBeInTheDocument();
+
+      // Should have canvas elements for both panes
+      const canvases = container.querySelectorAll("canvas");
+      expect(canvases.length).toBeGreaterThan(1);
+    });
+  });
+
+  test("renders a pane with explicit index", async () => {
+    const { container } = render(() => (
+      <YieldCurveChart>
+        <YieldCurveChart.Series type="Line" data={[{ time: 0, value: 100 }]} />
+        <YieldCurveChart.Pane index={2}>
+          <YieldCurveChart.Series type="Area" data={[{ time: 0, value: 1000 }]} />
+        </YieldCurveChart.Pane>
+      </YieldCurveChart>
+    ));
+
+    await waitFor(() => {
+      // Verify the chart container is present
+      expect(container.querySelector(".tv-lightweight-charts")).toBeInTheDocument();
+
+      // Verify the table structure
+      const table = container.querySelector("table");
+      expect(table).toBeInTheDocument();
+
+      // Should have multiple rows for different panes (main + explicit index 2)
+      const tableRows = table!.querySelectorAll("tr");
+      expect(tableRows.length).toBeGreaterThan(1);
+
+      // Should have pane separators
+      const paneSeparators = Array.from(tableRows).filter((row) => row.style.height === "1px");
+      expect(paneSeparators.length).toBeGreaterThan(0);
+    });
   });
 
   test("calls onSetData when series data is set", async () => {
@@ -179,11 +266,128 @@ describe("CHART: YieldCurveChart", () => {
     });
   });
 
-  test("cleans up on unmount", async () => {
-    const { unmount } = render(() => <YieldCurveChart />);
+  test("renders series with primitives", async () => {
+    const testData = [{ time: 0, value: 100 }];
+    const mockPrimitive = {
+      updateAllViews: vi.fn(),
+      paneViews: vi.fn(() => []),
+    };
+
+    const { container } = render(() => (
+      <YieldCurveChart>
+        <YieldCurveChart.Series type="Line" data={testData} primitives={[mockPrimitive]} />
+      </YieldCurveChart>
+    ));
+
+    await waitFor(() => {
+      // Verify the chart container is present
+      expect(container.querySelector(".tv-lightweight-charts")).toBeInTheDocument();
+
+      // Verify the table structure
+      const table = container.querySelector("table");
+      expect(table).toBeInTheDocument();
+
+      // Verify primitives were called
+      expect(mockPrimitive.updateAllViews).toHaveBeenCalled();
+    });
+  });
+
+  test("renders custom series", async () => {
+    const testData = [{ time: 0, value: 2.5 }];
+    const mockPaneView = {
+      updateAllViews: vi.fn(),
+      paneViews: vi.fn(() => []),
+      renderer: vi.fn(),
+      update: vi.fn(),
+      priceValueBuilder: vi.fn(() => [2.5]), // Return array of values for custom series
+      isWhitespace: vi.fn(() => false),
+      defaultOptions: vi.fn(() => ({ color: "#000000" })),
+    } as unknown as Parameters<typeof YieldCurveChart.CustomSeries>[0]["paneView"];
+
+    const onCreateSeriesMock = vi.fn();
+
+    render(() => (
+      <YieldCurveChart>
+        <YieldCurveChart.CustomSeries
+          paneView={mockPaneView}
+          data={testData}
+          onCreateSeries={onCreateSeriesMock}
+        />
+      </YieldCurveChart>
+    ));
+
+    // Wait for the callback to be called
+    await waitFor(() => {
+      expect(onCreateSeriesMock).toHaveBeenCalled();
+    });
+  });
+
+  test("custom series with primitives", async () => {
+    const testData = [{ time: 0, value: 100 }];
+    const mockPaneView = {
+      updateAllViews: vi.fn(),
+      paneViews: vi.fn(() => []),
+      renderer: vi.fn(),
+      update: vi.fn(),
+      priceValueBuilder: vi.fn(() => [100]),
+      isWhitespace: vi.fn(() => false),
+      defaultOptions: vi.fn(() => ({ color: "#000000" })),
+    } as unknown as Parameters<typeof YieldCurveChart.CustomSeries>[0]["paneView"];
+    const mockPrimitive = {
+      updateAllViews: vi.fn(),
+      paneViews: vi.fn(() => []),
+    };
+
+    const { container } = render(() => (
+      <YieldCurveChart>
+        <YieldCurveChart.CustomSeries
+          paneView={mockPaneView}
+          data={testData}
+          primitives={[mockPrimitive]}
+        />
+      </YieldCurveChart>
+    ));
+
+    await waitFor(() => {
+      // Verify the chart container is present
+      expect(container.querySelector(".tv-lightweight-charts")).toBeInTheDocument();
+
+      // Verify the table structure
+      const table = container.querySelector("table");
+      expect(table).toBeInTheDocument();
+
+      // Verify primitives were called
+      expect(mockPrimitive.updateAllViews).toHaveBeenCalled();
+    });
+  });
+
+  test("calls onRemoveSeries when series is unmounted", async () => {
+    const testData = [{ time: 0, value: 2.5 }];
+    const onRemoveSeriesMock = vi.fn();
+
+    const { unmount } = render(() => (
+      <YieldCurveChart>
+        <YieldCurveChart.Series type="Line" data={testData} onRemoveSeries={onRemoveSeriesMock} />
+      </YieldCurveChart>
+    ));
+
     unmount();
-    // If we got here without errors, the test passes
-    expect(true).toBe(true);
+
+    await waitFor(() => {
+      expect(onRemoveSeriesMock).toHaveBeenCalled();
+    });
+  });
+
+  test("cleans up on unmount", async () => {
+    const { container, unmount } = render(() => <YieldCurveChart />);
+
+    // Verify chart was created
+    expect(container.querySelector(".tv-lightweight-charts")).toBeInTheDocument();
+
+    unmount();
+
+    // Verify chart container is removed after unmount
+    expect(container.querySelector(".tv-lightweight-charts")).not.toBeInTheDocument();
   });
 
   test("works with createSeriesMarkers API", async () => {
@@ -213,6 +417,115 @@ describe("CHART: YieldCurveChart", () => {
     // Verify onSetData was called
     await waitFor(() => {
       expect(onSetDataMock).toHaveBeenCalled();
+    });
+  });
+
+  test("renders pane with primitives", async () => {
+    const mockPanePrimitive = {
+      updateAllViews: vi.fn(),
+      paneViews: vi.fn(() => []),
+      attached: vi.fn(),
+      detached: vi.fn(),
+    };
+
+    const onAttachPrimitivesMock = vi.fn();
+    const onDetachPrimitivesMock = vi.fn();
+
+    const { container } = render(() => (
+      <YieldCurveChart>
+        <YieldCurveChart.Series type="Line" data={[{ time: 0, value: 2.5 }]} />
+        <YieldCurveChart.Pane
+          primitives={[mockPanePrimitive]}
+          onAttachPrimitives={onAttachPrimitivesMock}
+          onDetachPrimitives={onDetachPrimitivesMock}
+        >
+          <YieldCurveChart.Series type="Area" data={[{ time: 0, value: 1000 }]} />
+        </YieldCurveChart.Pane>
+      </YieldCurveChart>
+    ));
+
+    await waitFor(() => {
+      // Verify the chart container is present
+      expect(container.querySelector(".tv-lightweight-charts")).toBeInTheDocument();
+
+      // Verify pane primitives were attached
+      expect(onAttachPrimitivesMock).toHaveBeenCalledWith([mockPanePrimitive]);
+
+      // Verify primitive methods were called
+      expect(mockPanePrimitive.updateAllViews).toHaveBeenCalled();
+    });
+  });
+
+  test("handles pane primitives attach/detach lifecycle", async () => {
+    const mockPanePrimitive = {
+      updateAllViews: vi.fn(),
+      paneViews: vi.fn(() => []),
+      attached: vi.fn(),
+      detached: vi.fn(),
+    };
+
+    const onAttachPrimitivesMock = vi.fn();
+    const onDetachPrimitivesMock = vi.fn();
+
+    const { unmount } = render(() => (
+      <YieldCurveChart>
+        <YieldCurveChart.Pane
+          primitives={[mockPanePrimitive]}
+          onAttachPrimitives={onAttachPrimitivesMock}
+          onDetachPrimitives={onDetachPrimitivesMock}
+        >
+          <YieldCurveChart.Series type="Line" data={[{ time: 0, value: 2.5 }]} />
+        </YieldCurveChart.Pane>
+      </YieldCurveChart>
+    ));
+
+    await waitFor(() => {
+      expect(onAttachPrimitivesMock).toHaveBeenCalledWith([mockPanePrimitive]);
+    });
+
+    // Unmount to trigger detach
+    unmount();
+
+    await waitFor(() => {
+      expect(onDetachPrimitivesMock).toHaveBeenCalledWith([mockPanePrimitive]);
+    });
+  });
+
+  test("handles reactive pane primitives updates", async () => {
+    const mockPrimitive1 = {
+      updateAllViews: vi.fn(),
+      paneViews: vi.fn(() => []),
+      attached: vi.fn(),
+      detached: vi.fn(),
+    };
+
+    const mockPrimitive2 = {
+      updateAllViews: vi.fn(),
+      paneViews: vi.fn(() => []),
+      attached: vi.fn(),
+      detached: vi.fn(),
+    };
+
+    const [primitives, setPrimitives] = createSignal([mockPrimitive1]);
+    const onAttachPrimitivesMock = vi.fn();
+
+    render(() => (
+      <YieldCurveChart>
+        <YieldCurveChart.Pane primitives={primitives()} onAttachPrimitives={onAttachPrimitivesMock}>
+          <YieldCurveChart.Series type="Line" data={[{ time: 0, value: 2.5 }]} />
+        </YieldCurveChart.Pane>
+      </YieldCurveChart>
+    ));
+
+    await waitFor(() => {
+      expect(onAttachPrimitivesMock).toHaveBeenCalledWith([mockPrimitive1]);
+    });
+
+    // Update primitives to trigger reactive update
+    setPrimitives([mockPrimitive1, mockPrimitive2]);
+
+    await waitFor(() => {
+      expect(onAttachPrimitivesMock).toHaveBeenCalledWith([mockPrimitive1, mockPrimitive2]);
     });
   });
 });

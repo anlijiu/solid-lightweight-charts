@@ -1,6 +1,15 @@
-import { createChart, type IChartApi, type ISeriesApi, type Time } from "lightweight-charts";
+import {
+  createChart,
+  createSeriesMarkers,
+  type IChartApi,
+  type IPaneApi,
+  type ISeriesApi,
+  type SeriesMarker,
+  type Time,
+} from "lightweight-charts";
 import {
   type Accessor,
+  createContext,
   createEffect,
   createMemo,
   createSignal,
@@ -11,20 +20,22 @@ import {
   type ParentProps,
   Show,
   splitProps,
+  useContext,
 } from "solid-js";
 
-import { SERIES_DEFINITION_MAP } from "../constants";
-import { TimeChartContext, useTimeChart } from "../contexts/chart";
-import { PaneIndexContext, usePaneIndex } from "../contexts/pane";
+import { SERIES_DEFINITION_MAP } from "./constants";
+import { TimeChartContext, useTimeChart } from "./contexts/chart";
 import type {
   BuiltInSeriesType,
   ChartCommonProps,
   ChartWithPaneState,
   CustomSeriesProps,
+  PaneContextType,
+  PanePrimitive,
   PaneProps,
   SeriesPrimitive,
   SeriesProps,
-} from "../types";
+} from "./types";
 
 type TimeChartOptions = NonNullable<Parameters<typeof createChart>[1]>;
 
@@ -135,16 +146,57 @@ export const TimeChart = (props: ParentProps<TimeChartProps>): JSX.Element => {
   );
 };
 
-const Pane = (props: PaneProps) => {
+const PaneContext = createContext<PaneContextType<Time>>({
+  paneIdx: () => 0,
+  panePrimitives: () => [],
+  attachPanePrimitives: () => {},
+  detachPanePrimitives: () => {},
+});
+
+const Pane = (props: PaneProps<Time>) => {
   const chart = useTimeChart() as unknown as Accessor<ChartWithPaneState<IChartApi>>;
 
-  const paneIdx = createMemo(() => props.index ?? chart().__getNextPaneIndex());
+  const _props = mergeProps(
+    {
+      primitives: [] as PanePrimitive<Time>[],
+    },
+    props,
+  );
 
-  onCleanup(() => {
-    chart().removePane(paneIdx());
-  });
+  const paneIdx = createMemo(() => _props.index ?? chart().__getNextPaneIndex());
+  const panePrimitives = () => _props.primitives;
 
-  return <PaneIndexContext.Provider value={paneIdx}>{props.children}</PaneIndexContext.Provider>;
+  const attachPanePrimitives = (primitives: PanePrimitive<Time>[], pane?: IPaneApi<Time>) => {
+    if (!pane) return;
+
+    for (const primitive of primitives) {
+      pane.detachPrimitive(primitive);
+    }
+
+    for (const primitive of primitives) {
+      pane.attachPrimitive(primitive);
+    }
+
+    _props.onAttachPrimitives?.(primitives);
+  };
+
+  const detachPanePrimitives = (primitives: PanePrimitive<Time>[], pane?: IPaneApi<Time>) => {
+    if (!pane) return;
+
+    for (const primitive of primitives) {
+      pane.detachPrimitive(primitive);
+    }
+
+    _props.onDetachPrimitives?.(primitives);
+  };
+
+  return (
+    <PaneContext.Provider
+      value={{ paneIdx, panePrimitives, attachPanePrimitives, detachPanePrimitives }}
+    >
+      {props.children}
+    </PaneContext.Provider>
+  );
 };
 
 /**
@@ -169,11 +221,13 @@ TimeChart.Pane = Pane;
 
 const Series = <T extends BuiltInSeriesType>(props: SeriesProps<T>) => {
   const chart = useTimeChart();
-  const paneIdx = usePaneIndex();
+  const { paneIdx, panePrimitives, attachPanePrimitives, detachPanePrimitives } =
+    useContext(PaneContext);
 
   const _props = mergeProps(
     {
       primitives: [] as SeriesPrimitive<T, Time>[],
+      markers: () => [] as SeriesMarker<Time>[],
     },
     props,
   );
@@ -181,9 +235,13 @@ const Series = <T extends BuiltInSeriesType>(props: SeriesProps<T>) => {
   const [local, options] = splitProps(_props, [
     "data",
     "primitives",
+    "markers",
     "onCreateSeries",
     "onRemoveSeries",
     "onSetData",
+    "onSetMarkers",
+    "onAttachPrimitives",
+    "onDetachPrimitives",
   ]);
 
   onMount(() => {
@@ -194,25 +252,47 @@ const Series = <T extends BuiltInSeriesType>(props: SeriesProps<T>) => {
     ) as ISeriesApi<T>;
     local.onCreateSeries?.(series, paneIdx());
 
+    const seriesPane = chart().panes()[paneIdx()];
+
     createEffect(() => {
       series.setData(local.data);
       local.onSetData?.({ series, data: local.data });
+
+      const dataMarkers = local.markers(local.data);
+      createSeriesMarkers(series, dataMarkers);
+      local.onSetMarkers?.(dataMarkers);
+    });
+
+    createEffect(() => {
+      const currentPanePrimitives = panePrimitives();
+
+      attachPanePrimitives(currentPanePrimitives, seriesPane);
+
+      onCleanup(() => {
+        detachPanePrimitives(currentPanePrimitives, seriesPane);
+      });
+    });
+
+    createEffect(() => {
+      const currentPrimitives = local.primitives;
+
+      for (const primitive of currentPrimitives) {
+        series.attachPrimitive(primitive);
+      }
+
+      local.onAttachPrimitives?.(currentPrimitives);
+
+      onCleanup(() => {
+        for (const primitive of currentPrimitives) {
+          series.detachPrimitive(primitive);
+        }
+
+        local.onDetachPrimitives?.(currentPrimitives);
+      });
     });
 
     createEffect(() => {
       series.applyOptions(options);
-    });
-
-    createEffect(() => {
-      for (const primitive of local.primitives) {
-        series.attachPrimitive(primitive);
-      }
-
-      onCleanup(() => {
-        for (const primitive of local.primitives) {
-          series.detachPrimitive(primitive);
-        }
-      });
     });
 
     onCleanup(() => {
@@ -244,11 +324,13 @@ TimeChart.Series = Series;
 
 const CustomSeries = (props: CustomSeriesProps<Time>) => {
   const chart = useTimeChart();
-  const paneIdx = usePaneIndex();
+  const { paneIdx, panePrimitives, attachPanePrimitives, detachPanePrimitives } =
+    useContext(PaneContext);
 
   const _props = mergeProps(
     {
       primitives: [] as SeriesPrimitive<"Custom", Time>[],
+      markers: () => [] as SeriesMarker<Time>[],
     },
     props,
   );
@@ -256,35 +338,61 @@ const CustomSeries = (props: CustomSeriesProps<Time>) => {
   const [local, options] = splitProps(_props, [
     "data",
     "primitives",
+    "markers",
+    "paneView",
     "onCreateSeries",
     "onRemoveSeries",
     "onSetData",
-    "paneView",
+    "onSetMarkers",
+    "onAttachPrimitives",
+    "onDetachPrimitives",
   ]);
 
   onMount(() => {
     const series = chart().addCustomSeries(local.paneView, options, paneIdx());
     local.onCreateSeries?.(series, paneIdx());
 
+    const seriesPane = chart().panes()[paneIdx()];
+
     createEffect(() => {
       series.setData(local.data);
       local.onSetData?.({ series, data: local.data });
+
+      const dataMarkers = local.markers(local.data);
+      createSeriesMarkers(series, dataMarkers);
+      local.onSetMarkers?.(dataMarkers);
+    });
+
+    createEffect(() => {
+      const currentPanePrimitives = panePrimitives();
+
+      attachPanePrimitives(currentPanePrimitives, seriesPane);
+
+      onCleanup(() => {
+        detachPanePrimitives(currentPanePrimitives, seriesPane);
+      });
+    });
+
+    createEffect(() => {
+      const currentPrimitives = local.primitives;
+
+      for (const primitive of currentPrimitives) {
+        series.attachPrimitive(primitive);
+      }
+
+      local.onAttachPrimitives?.(currentPrimitives);
+
+      onCleanup(() => {
+        for (const primitive of currentPrimitives) {
+          series.detachPrimitive(primitive);
+        }
+
+        local.onDetachPrimitives?.(currentPrimitives);
+      });
     });
 
     createEffect(() => {
       series.applyOptions(options);
-    });
-
-    createEffect(() => {
-      for (const primitive of local.primitives) {
-        series.attachPrimitive(primitive);
-      }
-
-      onCleanup(() => {
-        for (const primitive of local.primitives) {
-          series.detachPrimitive(primitive);
-        }
-      });
     });
 
     onCleanup(() => {

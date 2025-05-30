@@ -1,10 +1,11 @@
 import { render, waitFor } from "@solidjs/testing-library";
 import type { SeriesMarker } from "lightweight-charts";
+import type { ISeriesApi } from "lightweight-charts";
 import { createSeriesMarkers } from "lightweight-charts";
 import { createSignal } from "solid-js";
 import { describe, expect, test, vi } from "vitest";
 
-import { PriceChart } from "../components/PriceChart";
+import { PriceChart } from "../PriceChart";
 import type { IOptionsChartApi } from "../types";
 
 describe("CHART: PriceChart", () => {
@@ -15,6 +16,12 @@ describe("CHART: PriceChart", () => {
     expect(container.querySelector(".tv-lightweight-charts")).toBeInTheDocument();
 
     expect(onCreateChartMock).toHaveBeenCalled();
+  });
+
+  test("throws when series is rendered outside of chart", async () => {
+    expect(() =>
+      render(() => <PriceChart.Series type="Line" data={[{ time: 0, value: 100 }]} />),
+    ).toThrow("[solid-lightweight-charts] No parent PriceChart component found!");
   });
 
   test("applies custom class and style", () => {
@@ -55,6 +62,33 @@ describe("CHART: PriceChart", () => {
     expect(chartOptions.rightPriceScale.scaleMargins.bottom).toBe(0.1);
   });
 
+  test("does not resize when autoSize is true", () => {
+    let _priceChart: IOptionsChartApi;
+
+    const [dimensions, setDimensions] = createSignal({
+      width: 800,
+      height: 400,
+    });
+
+    render(() => (
+      <PriceChart
+        autoSize={true}
+        width={dimensions().width}
+        height={dimensions().height}
+        onCreateChart={(chart) => {
+          _priceChart = chart;
+          vi.spyOn(_priceChart, "resize");
+        }}
+      />
+    ));
+
+    expect(_priceChart!).toBeDefined();
+
+    setDimensions({ width: 1000, height: 500 });
+
+    expect(_priceChart!.resize).not.toHaveBeenCalled();
+  });
+
   test("handles resize when autoSize is false", () => {
     let _priceChart: IOptionsChartApi;
     const onResizeMock = vi.fn();
@@ -86,7 +120,6 @@ describe("CHART: PriceChart", () => {
   });
 
   test("renders a series", async () => {
-    // PriceChart uses numeric time values
     const testData = [
       { time: 0, value: 100 },
       { time: 1, value: 105 },
@@ -112,52 +145,108 @@ describe("CHART: PriceChart", () => {
   });
 
   test("updates series data when props change", async () => {
-    // PriceChart uses numeric time values
     const [data, setData] = createSignal([
       { time: 0, value: 100 },
       { time: 1, value: 105 },
     ]);
 
+    const onSetDataMock = vi.fn();
+
     render(() => (
       <PriceChart>
-        <PriceChart.Series type="Line" data={data()} />
+        <PriceChart.Series type="Line" data={data()} onSetData={onSetDataMock} />
       </PriceChart>
     ));
 
-    // Update data after initial render
+    setData([
+      { time: 0, value: 100 },
+      { time: 1, value: 105 },
+      { time: 2, value: 110 },
+    ]);
+
     await waitFor(() => {
-      setData([
-        { time: 0, value: 100 },
-        { time: 1, value: 105 },
-        { time: 2, value: 110 },
-      ]);
+      expect(onSetDataMock).toHaveBeenCalledWith({
+        series: expect.any(Object),
+        data: [
+          { time: 0, value: 100 },
+          { time: 1, value: 105 },
+          { time: 2, value: 110 },
+        ],
+      });
     });
   });
 
-  test("renders multiple series", async () => {
-    render(() => (
-      <PriceChart>
-        <PriceChart.Series type="Line" data={[{ time: 0, value: 100 }]} />
-        <PriceChart.Series type="Area" data={[{ time: 0, value: 90 }]} />
+  test("renders a pane with series", async () => {
+    let chartInstance: IOptionsChartApi;
+    const seriesInstances: ISeriesApi<"Line" | "Histogram", number>[] = [];
+
+    const onCreateChart = (chart: IOptionsChartApi) => {
+      chartInstance = chart;
+    };
+
+    const onCreateSeries = (series: ISeriesApi<"Line" | "Histogram", number>) => {
+      seriesInstances.push(series);
+    };
+
+    const { container } = render(() => (
+      <PriceChart onCreateChart={onCreateChart}>
+        <PriceChart.Series
+          type="Line"
+          data={[{ time: 0, value: 100 }]}
+          onCreateSeries={onCreateSeries}
+        />
+        <PriceChart.Pane>
+          <PriceChart.Series
+            type="Histogram"
+            data={[{ time: 0, value: 1000 }]}
+            onCreateSeries={onCreateSeries}
+          />
+        </PriceChart.Pane>
       </PriceChart>
     ));
 
-    // The test passes if rendering completes without errors
-    expect(true).toBe(true);
+    // Verify chart container is present
+    expect(container.querySelector(".tv-lightweight-charts")).toBeInTheDocument();
+
+    // Wait for both series to be created
+    await waitFor(() => {
+      expect(seriesInstances).toHaveLength(2);
+    });
+
+    // Verify chart instance was created
+    expect(chartInstance!).toBeDefined();
+
+    // Verify we have both series types
+    expect(seriesInstances[0]).toBeDefined(); // Line series
+    expect(seriesInstances[1]).toBeDefined(); // Histogram series
   });
 
-  test("renders a pane with series", async () => {
-    render(() => (
+  test("renders a pane with explicit index", async () => {
+    const { container } = render(() => (
       <PriceChart>
         <PriceChart.Series type="Line" data={[{ time: 0, value: 100 }]} />
-        <PriceChart.Pane>
+        <PriceChart.Pane index={2}>
           <PriceChart.Series type="Histogram" data={[{ time: 0, value: 1000 }]} />
         </PriceChart.Pane>
       </PriceChart>
     ));
 
-    // The test passes if rendering completes without errors
-    expect(true).toBe(true);
+    await waitFor(() => {
+      // Verify the chart container is present
+      expect(container.querySelector(".tv-lightweight-charts")).toBeInTheDocument();
+
+      // Verify the table structure
+      const table = container.querySelector("table");
+      expect(table).toBeInTheDocument();
+
+      // Should have multiple rows for different panes (main + explicit index 2)
+      const tableRows = table!.querySelectorAll("tr");
+      expect(tableRows.length).toBeGreaterThan(1);
+
+      // Should have pane separators
+      const paneSeparators = Array.from(tableRows).filter((row) => row.style.height === "1px");
+      expect(paneSeparators.length).toBeGreaterThan(0);
+    });
   });
 
   test("calls onSetData when series data is set", async () => {
@@ -179,11 +268,128 @@ describe("CHART: PriceChart", () => {
     });
   });
 
-  test("cleans up on unmount", async () => {
-    const { unmount } = render(() => <PriceChart />);
+  test("renders series with primitives", async () => {
+    const testData = [{ time: 0, value: 100 }];
+    const mockPrimitive = {
+      updateAllViews: vi.fn(),
+      paneViews: vi.fn(() => []),
+    };
+
+    const { container } = render(() => (
+      <PriceChart>
+        <PriceChart.Series type="Line" data={testData} primitives={[mockPrimitive]} />
+      </PriceChart>
+    ));
+
+    await waitFor(() => {
+      // Verify the chart container is present
+      expect(container.querySelector(".tv-lightweight-charts")).toBeInTheDocument();
+
+      // Verify the table structure
+      const table = container.querySelector("table");
+      expect(table).toBeInTheDocument();
+
+      // Verify primitives were called
+      expect(mockPrimitive.updateAllViews).toHaveBeenCalled();
+    });
+  });
+
+  test("renders custom series", async () => {
+    const testData = [{ time: 0, value: 100 }];
+    const mockPaneView = {
+      updateAllViews: vi.fn(),
+      paneViews: vi.fn(() => []),
+      renderer: vi.fn(),
+      update: vi.fn(),
+      priceValueBuilder: vi.fn(() => [100]),
+      isWhitespace: vi.fn(() => false),
+      defaultOptions: vi.fn(() => ({ color: "#000000" })),
+    } as unknown as Parameters<typeof PriceChart.CustomSeries>[0]["paneView"];
+
+    const onCreateSeriesMock = vi.fn();
+
+    render(() => (
+      <PriceChart>
+        <PriceChart.CustomSeries
+          paneView={mockPaneView}
+          data={testData}
+          onCreateSeries={onCreateSeriesMock}
+        />
+      </PriceChart>
+    ));
+
+    // Wait for the callback to be called
+    await waitFor(() => {
+      expect(onCreateSeriesMock).toHaveBeenCalled();
+    });
+  });
+
+  test("custom series with primitives", async () => {
+    const testData = [{ time: 0, value: 100 }];
+    const mockPaneView = {
+      updateAllViews: vi.fn(),
+      paneViews: vi.fn(() => []),
+      renderer: vi.fn(),
+      update: vi.fn(),
+      priceValueBuilder: vi.fn(() => [100]),
+      isWhitespace: vi.fn(() => false),
+      defaultOptions: vi.fn(() => ({ color: "#000000" })),
+    } as unknown as Parameters<typeof PriceChart.CustomSeries>[0]["paneView"];
+    const mockPrimitive = {
+      updateAllViews: vi.fn(),
+      paneViews: vi.fn(() => []),
+    };
+
+    const { container } = render(() => (
+      <PriceChart>
+        <PriceChart.CustomSeries
+          paneView={mockPaneView}
+          data={testData}
+          primitives={[mockPrimitive]}
+        />
+      </PriceChart>
+    ));
+
+    await waitFor(() => {
+      // Verify the chart container is present
+      expect(container.querySelector(".tv-lightweight-charts")).toBeInTheDocument();
+
+      // Verify the table structure
+      const table = container.querySelector("table");
+      expect(table).toBeInTheDocument();
+
+      // Verify primitives were called
+      expect(mockPrimitive.updateAllViews).toHaveBeenCalled();
+    });
+  });
+
+  test("calls onRemoveSeries when series is unmounted", async () => {
+    const testData = [{ time: 0, value: 100 }];
+    const onRemoveSeriesMock = vi.fn();
+
+    const { unmount } = render(() => (
+      <PriceChart>
+        <PriceChart.Series type="Line" data={testData} onRemoveSeries={onRemoveSeriesMock} />
+      </PriceChart>
+    ));
+
     unmount();
-    // If we got here without errors, the test passes
-    expect(true).toBe(true);
+
+    await waitFor(() => {
+      expect(onRemoveSeriesMock).toHaveBeenCalled();
+    });
+  });
+
+  test("cleans up on unmount", async () => {
+    const { container, unmount } = render(() => <PriceChart />);
+
+    // Verify chart was created
+    expect(container.querySelector(".tv-lightweight-charts")).toBeInTheDocument();
+
+    unmount();
+
+    // Verify chart container is removed after unmount
+    expect(container.querySelector(".tv-lightweight-charts")).not.toBeInTheDocument();
   });
 
   test("works with createSeriesMarkers API", async () => {
@@ -209,6 +415,115 @@ describe("CHART: PriceChart", () => {
     // Verify onSetData was called
     await waitFor(() => {
       expect(onSetDataMock).toHaveBeenCalled();
+    });
+  });
+
+  test("renders pane with primitives", async () => {
+    const mockPanePrimitive = {
+      updateAllViews: vi.fn(),
+      paneViews: vi.fn(() => []),
+      attached: vi.fn(),
+      detached: vi.fn(),
+    };
+
+    const onAttachPrimitivesMock = vi.fn();
+    const onDetachPrimitivesMock = vi.fn();
+
+    const { container } = render(() => (
+      <PriceChart>
+        <PriceChart.Series type="Line" data={[{ time: 0, value: 100 }]} />
+        <PriceChart.Pane
+          primitives={[mockPanePrimitive]}
+          onAttachPrimitives={onAttachPrimitivesMock}
+          onDetachPrimitives={onDetachPrimitivesMock}
+        >
+          <PriceChart.Series type="Histogram" data={[{ time: 0, value: 1000 }]} />
+        </PriceChart.Pane>
+      </PriceChart>
+    ));
+
+    await waitFor(() => {
+      // Verify the chart container is present
+      expect(container.querySelector(".tv-lightweight-charts")).toBeInTheDocument();
+
+      // Verify pane primitives were attached
+      expect(onAttachPrimitivesMock).toHaveBeenCalledWith([mockPanePrimitive]);
+
+      // Verify primitive methods were called
+      expect(mockPanePrimitive.updateAllViews).toHaveBeenCalled();
+    });
+  });
+
+  test("handles pane primitives attach/detach lifecycle", async () => {
+    const mockPanePrimitive = {
+      updateAllViews: vi.fn(),
+      paneViews: vi.fn(() => []),
+      attached: vi.fn(),
+      detached: vi.fn(),
+    };
+
+    const onAttachPrimitivesMock = vi.fn();
+    const onDetachPrimitivesMock = vi.fn();
+
+    const { unmount } = render(() => (
+      <PriceChart>
+        <PriceChart.Pane
+          primitives={[mockPanePrimitive]}
+          onAttachPrimitives={onAttachPrimitivesMock}
+          onDetachPrimitives={onDetachPrimitivesMock}
+        >
+          <PriceChart.Series type="Line" data={[{ time: 0, value: 100 }]} />
+        </PriceChart.Pane>
+      </PriceChart>
+    ));
+
+    await waitFor(() => {
+      expect(onAttachPrimitivesMock).toHaveBeenCalledWith([mockPanePrimitive]);
+    });
+
+    // Unmount to trigger detach
+    unmount();
+
+    await waitFor(() => {
+      expect(onDetachPrimitivesMock).toHaveBeenCalledWith([mockPanePrimitive]);
+    });
+  });
+
+  test("handles reactive pane primitives updates", async () => {
+    const mockPrimitive1 = {
+      updateAllViews: vi.fn(),
+      paneViews: vi.fn(() => []),
+      attached: vi.fn(),
+      detached: vi.fn(),
+    };
+
+    const mockPrimitive2 = {
+      updateAllViews: vi.fn(),
+      paneViews: vi.fn(() => []),
+      attached: vi.fn(),
+      detached: vi.fn(),
+    };
+
+    const [primitives, setPrimitives] = createSignal([mockPrimitive1]);
+    const onAttachPrimitivesMock = vi.fn();
+
+    render(() => (
+      <PriceChart>
+        <PriceChart.Pane primitives={primitives()} onAttachPrimitives={onAttachPrimitivesMock}>
+          <PriceChart.Series type="Line" data={[{ time: 0, value: 100 }]} />
+        </PriceChart.Pane>
+      </PriceChart>
+    ));
+
+    await waitFor(() => {
+      expect(onAttachPrimitivesMock).toHaveBeenCalledWith([mockPrimitive1]);
+    });
+
+    // Update primitives to trigger reactive update
+    setPrimitives([mockPrimitive1, mockPrimitive2]);
+
+    await waitFor(() => {
+      expect(onAttachPrimitivesMock).toHaveBeenCalledWith([mockPrimitive1, mockPrimitive2]);
     });
   });
 });

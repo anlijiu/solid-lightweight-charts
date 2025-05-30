@@ -4,7 +4,7 @@ import { type Accessor, createContext, useContext } from "solid-js";
 import type { IOptionsChartApi } from "../types";
 
 export const TimeChartContext = createContext<Accessor<IChartApi>>();
-export const OptionsChartContext = createContext<Accessor<IOptionsChartApi>>();
+export const PriceChartContext = createContext<Accessor<IOptionsChartApi>>();
 export const YieldCurveChartContext = createContext<Accessor<IYieldCurveChartApi>>();
 
 export const useTimeChart = () => {
@@ -17,11 +17,11 @@ export const useTimeChart = () => {
   return ctx;
 };
 
-export const useOptionsChart = () => {
-  const ctx = useContext(OptionsChartContext);
+export const usePriceChart = () => {
+  const ctx = useContext(PriceChartContext);
 
   if (!ctx) {
-    throw new Error("[solid-lightweight-charts] No parent OptionsChart component found!");
+    throw new Error("[solid-lightweight-charts] No parent PriceChart component found!");
   }
 
   return ctx;
