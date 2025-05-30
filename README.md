@@ -118,30 +118,39 @@ import { YieldCurveChart } from "@dschz/solid-lightweight-charts";
 
 ```tsx
 import { TimeChart } from "@dschz/solid-lightweight-charts";
-import { createSeriesMarkers, type SeriesMarker, type Time } from "lightweight-charts";
 
 <TimeChart>
-  {/* Main pane with price data */}
+  {/* Main pane with price data and declarative markers */}
   <TimeChart.Series
     type="Candlestick"
     data={candleData}
-    onSetData={({ series, data }) => {
-      // Add markers using the createSeriesMarkers API
-      createSeriesMarkers(series, [
-        {
-          time: data[10].time,
-          position: "aboveBar",
-          color: "#f68410",
-          shape: "circle",
-          text: "Buy",
-        },
-      ] as SeriesMarker<Time>[]);
-    }}
+    markers={(data) => [
+      {
+        time: data[10].time,
+        position: "aboveBar",
+        color: "#f68410",
+        shape: "circle",
+        text: "Buy",
+      },
+      {
+        time: data[20].time,
+        position: "belowBar",
+        color: "#e91e63",
+        shape: "arrowDown",
+        text: "Sell",
+      },
+    ]}
+    onSetMarkers={(markers) => console.log("Markers updated:", markers)}
   />
 
   {/* Secondary pane with volume */}
   <TimeChart.Pane>
-    <TimeChart.Series type="Histogram" data={volumeData} priceScaleId="volume" />
+    <TimeChart.Series
+      type="Histogram"
+      data={volumeData}
+      priceScaleId="volume"
+      color="rgba(76, 175, 80, 0.8)"
+    />
   </TimeChart.Pane>
 </TimeChart>;
 ```
