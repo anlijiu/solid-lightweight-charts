@@ -507,25 +507,125 @@ describe("CHART: YieldCurveChart", () => {
     };
 
     const [primitives, setPrimitives] = createSignal([mockPrimitive1]);
-    const onAttachPrimitivesMock = vi.fn();
+    const onPrimitivesAttachedMock = vi.fn();
 
     render(() => (
       <YieldCurveChart>
-        <YieldCurveChart.Pane primitives={primitives()} onAttachPrimitives={onAttachPrimitivesMock}>
+        <YieldCurveChart.Pane
+          primitives={primitives()}
+          onAttachPrimitives={onPrimitivesAttachedMock}
+        >
           <YieldCurveChart.Series type="Line" data={[{ time: 0, value: 2.5 }]} />
         </YieldCurveChart.Pane>
       </YieldCurveChart>
     ));
 
     await waitFor(() => {
-      expect(onAttachPrimitivesMock).toHaveBeenCalledWith([mockPrimitive1]);
+      expect(onPrimitivesAttachedMock).toHaveBeenCalledWith([mockPrimitive1]);
     });
 
     // Update primitives to trigger reactive update
     setPrimitives([mockPrimitive1, mockPrimitive2]);
 
     await waitFor(() => {
-      expect(onAttachPrimitivesMock).toHaveBeenCalledWith([mockPrimitive1, mockPrimitive2]);
+      expect(onPrimitivesAttachedMock).toHaveBeenCalledWith([mockPrimitive1, mockPrimitive2]);
+    });
+  });
+
+  test("processes chart and pane primitives", async () => {
+    // Chart-level primitives
+    const chartPrimitive1 = {
+      updateAllViews: vi.fn(),
+      paneViews: vi.fn(() => []),
+      attached: vi.fn(),
+      detached: vi.fn(),
+    };
+
+    const chartPrimitive2 = {
+      updateAllViews: vi.fn(),
+      paneViews: vi.fn(() => []),
+      attached: vi.fn(),
+      detached: vi.fn(),
+    };
+
+    // Pane-level primitives
+    const panePrimitive1 = {
+      updateAllViews: vi.fn(),
+      paneViews: vi.fn(() => []),
+      attached: vi.fn(),
+      detached: vi.fn(),
+    };
+
+    const panePrimitive2 = {
+      updateAllViews: vi.fn(),
+      paneViews: vi.fn(() => []),
+      attached: vi.fn(),
+      detached: vi.fn(),
+    };
+
+    const [chartPrimitives, setChartPrimitives] = createSignal([chartPrimitive1]);
+    const [panePrimitives, setPanePrimitives] = createSignal([panePrimitive1]);
+
+    const onChartPrimitivesAttachedMock = vi.fn();
+    const onChartPrimitivesDetachedMock = vi.fn();
+    const onPanePrimitivesAttachedMock = vi.fn();
+    const onPanePrimitivesDetachedMock = vi.fn();
+
+    const { unmount } = render(() => (
+      <YieldCurveChart
+        primitives={chartPrimitives()}
+        onPrimitivesAttached={onChartPrimitivesAttachedMock}
+        onPrimitivesDetached={onChartPrimitivesDetachedMock}
+      >
+        <YieldCurveChart.Series type="Line" data={[{ time: 0, value: 2.5 }]} />
+        <YieldCurveChart.Pane
+          primitives={panePrimitives()}
+          onAttachPrimitives={onPanePrimitivesAttachedMock}
+          onDetachPrimitives={onPanePrimitivesDetachedMock}
+        >
+          <YieldCurveChart.Series type="Area" data={[{ time: 0, value: 1000 }]} />
+        </YieldCurveChart.Pane>
+      </YieldCurveChart>
+    ));
+
+    // Wait for initial primitives to be attached
+    await waitFor(() => {
+      expect(onChartPrimitivesAttachedMock).toHaveBeenCalledWith([chartPrimitive1]);
+      expect(onPanePrimitivesAttachedMock).toHaveBeenCalledWith([panePrimitive1]);
+    });
+
+    // Verify primitives were called
+    await waitFor(() => {
+      expect(chartPrimitive1.updateAllViews).toHaveBeenCalled();
+      expect(panePrimitive1.updateAllViews).toHaveBeenCalled();
+    });
+
+    // Update chart-level primitives reactively
+    setChartPrimitives([chartPrimitive1, chartPrimitive2]);
+
+    await waitFor(() => {
+      expect(onChartPrimitivesAttachedMock).toHaveBeenCalledWith([
+        chartPrimitive1,
+        chartPrimitive2,
+      ]);
+    });
+
+    // Update pane-level primitives reactively
+    setPanePrimitives([panePrimitive1, panePrimitive2]);
+
+    await waitFor(() => {
+      expect(onPanePrimitivesAttachedMock).toHaveBeenCalledWith([panePrimitive1, panePrimitive2]);
+    });
+
+    // Unmount to test detach lifecycle
+    unmount();
+
+    await waitFor(() => {
+      expect(onChartPrimitivesDetachedMock).toHaveBeenCalledWith([
+        chartPrimitive1,
+        chartPrimitive2,
+      ]);
+      expect(onPanePrimitivesDetachedMock).toHaveBeenCalledWith([panePrimitive1, panePrimitive2]);
     });
   });
 });

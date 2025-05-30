@@ -3,7 +3,6 @@ import type {
   CustomSeriesOptions,
   IChartApiBase,
   ICustomSeriesPaneView,
-  IPaneApi,
   IPanePrimitive,
   ISeriesApi,
   ISeriesPrimitiveBase,
@@ -25,10 +24,17 @@ export type ChartWithPaneState<T> = T & {
 export type IOptionsChartApi = IChartApiBase<number>;
 export type BuiltInSeriesType = Exclude<SeriesType, "Custom">;
 
+export type ChartContextType<T, HorzScaleItem = Time> = {
+  readonly chart: Accessor<T>;
+  readonly primitives: Accessor<PanePrimitive<HorzScaleItem>[]>;
+  readonly onChartPrimitivesAttached: (primitives: PanePrimitive<HorzScaleItem>[]) => void;
+  readonly onChartPrimitivesDetached: (primitives: PanePrimitive<HorzScaleItem>[]) => void;
+};
+
 /**
  * Common props for all chart components.
  */
-export type ChartCommonProps<T> = {
+export type ChartCommonProps<T, HorzScaleItem = Time> = {
   /**
    * The id of the chart container.
    */
@@ -43,6 +49,11 @@ export type ChartCommonProps<T> = {
    * The style of the chart container.
    */
   readonly style?: JSX.CSSProperties;
+
+  /**
+   * The pane primitives to be used for the default chart pane (pane index 0).
+   */
+  readonly primitives?: PanePrimitive<HorzScaleItem>[];
 
   /**
    * Whether to force a repaint of the chart when the chart is resized.
@@ -66,6 +77,18 @@ export type ChartCommonProps<T> = {
    * @param height - The height of the chart.
    */
   readonly onResize?: (width: number, height: number) => void;
+
+  /**
+   * Callback function that is called when the pane primitives are attached to the root chart pane.
+   * @param primitives - The primitives that were attached to the root chart pane.
+   */
+  readonly onPrimitivesAttached?: (primitives: PanePrimitive<HorzScaleItem>[]) => void;
+
+  /**
+   * Callback function that is called when the pane primitives are detached from the root chart pane.
+   * @param primitives - The primitives that were detached from the root chart pane.
+   */
+  readonly onPrimitivesDetached?: (primitives: PanePrimitive<HorzScaleItem>[]) => void;
 };
 
 /**
@@ -198,14 +221,8 @@ export type CustomSeriesProps<HorzScaleItem = Time> = SeriesCommonProps<"Custom"
 export type PaneContextType<HorzScaleItem = Time> = {
   readonly paneIdx: Accessor<number>;
   readonly panePrimitives: Accessor<PanePrimitive<HorzScaleItem>[]>;
-  readonly attachPanePrimitives: (
-    primitives: PanePrimitive<HorzScaleItem>[],
-    pane?: IPaneApi<HorzScaleItem>,
-  ) => void;
-  readonly detachPanePrimitives: (
-    primitives: PanePrimitive<HorzScaleItem>[],
-    pane?: IPaneApi<HorzScaleItem>,
-  ) => void;
+  readonly onPanePrimitivesAttached: (primitives: PanePrimitive<HorzScaleItem>[]) => void;
+  readonly onPanePrimitivesDetached: (primitives: PanePrimitive<HorzScaleItem>[]) => void;
 };
 
 /**

@@ -9,6 +9,7 @@
 [![npm version](https://img.shields.io/npm/v/@dschz/solid-lightweight-charts?style=flat-square)](https://www.npmjs.com/package/@dschz/solid-lightweight-charts)
 [![Bundle Size](https://img.shields.io/bundlephobia/minzip/@dschz/solid-uplot)](https://bundlephobia.com/package/@dschz/solid-lightweight-charts)
 [![CI](https://github.com/dsnchz/solid-lightweight-charts/actions/workflows/ci.yaml/badge.svg)](https://github.com/dsnchz/solid-lightweight-charts/actions/workflows/ci.yaml)
+[![Discord](https://img.shields.io/badge/Discord-%235865F2.svg?logo=discord&logoColor=white)](https://discord.gg/jV4MghpHUA)
 
 > A fully typed SolidJS wrapper around TradingView's [Lightweight Charts](https://github.com/tradingview/lightweight-charts), providing declarative, reactive charting with support for time series, price, and yield curve data.
 
@@ -152,35 +153,6 @@ import { TimeChart } from "@dschz/solid-lightweight-charts";
       color="rgba(76, 175, 80, 0.8)"
     />
   </TimeChart.Pane>
-</TimeChart>;
-```
-
-### Enhanced Markers with Reactive Props
-
-```tsx
-import { TimeChart } from "@dschz/solid-lightweight-charts";
-
-<TimeChart>
-  <TimeChart.Series
-    type="Line"
-    data={priceData}
-    markers={(data) => [
-      {
-        time: data[5].time,
-        position: "aboveBar",
-        color: "#2196F3",
-        shape: "arrowUp",
-        text: "Buy Signal",
-      },
-      {
-        time: data[15].time,
-        position: "belowBar",
-        color: "#F44336",
-        shape: "arrowDown",
-        text: "Sell Signal",
-      },
-    ]}
-  />
 </TimeChart>;
 ```
 
@@ -477,6 +449,7 @@ bun start
 
 - [TradingView Lightweight Charts Docs](https://tradingview.github.io/lightweight-charts/)
 - [Lightweight Charts GitHub](https://github.com/tradingview/lightweight-charts)
+- [Discord](https://discord.gg/jV4MghpHUA)
 
 > Full documentation and advanced guides coming soon.
 

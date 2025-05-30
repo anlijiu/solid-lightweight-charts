@@ -400,112 +400,100 @@ describe("CHART: TimeChart", () => {
     });
   });
 
-  test("renders pane with primitives", async () => {
-    const mockPanePrimitive = {
+  test("processes chart and pane primitives", async () => {
+    // Chart-level primitives
+    const chartPrimitive1 = {
       updateAllViews: vi.fn(),
       paneViews: vi.fn(() => []),
       attached: vi.fn(),
       detached: vi.fn(),
     };
 
-    const onAttachPrimitivesMock = vi.fn();
-    const onDetachPrimitivesMock = vi.fn();
+    const chartPrimitive2 = {
+      updateAllViews: vi.fn(),
+      paneViews: vi.fn(() => []),
+      attached: vi.fn(),
+      detached: vi.fn(),
+    };
 
-    const { container } = render(() => (
-      <TimeChart>
+    // Pane-level primitives
+    const panePrimitive1 = {
+      updateAllViews: vi.fn(),
+      paneViews: vi.fn(() => []),
+      attached: vi.fn(),
+      detached: vi.fn(),
+    };
+
+    const panePrimitive2 = {
+      updateAllViews: vi.fn(),
+      paneViews: vi.fn(() => []),
+      attached: vi.fn(),
+      detached: vi.fn(),
+    };
+
+    const [chartPrimitives, setChartPrimitives] = createSignal([chartPrimitive1]);
+    const [panePrimitives, setPanePrimitives] = createSignal([panePrimitive1]);
+
+    const onChartPrimitivesAttachedMock = vi.fn();
+    const onChartPrimitivesDetachedMock = vi.fn();
+    const onPanePrimitivesAttachedMock = vi.fn();
+    const onPanePrimitivesDetachedMock = vi.fn();
+
+    const { unmount } = render(() => (
+      <TimeChart
+        primitives={chartPrimitives()}
+        onPrimitivesAttached={onChartPrimitivesAttachedMock}
+        onPrimitivesDetached={onChartPrimitivesDetachedMock}
+      >
         <TimeChart.Series type="Line" data={[{ time: "2023-01-01", value: 100 }]} />
         <TimeChart.Pane
-          primitives={[mockPanePrimitive]}
-          onAttachPrimitives={onAttachPrimitivesMock}
-          onDetachPrimitives={onDetachPrimitivesMock}
+          primitives={panePrimitives()}
+          onAttachPrimitives={onPanePrimitivesAttachedMock}
+          onDetachPrimitives={onPanePrimitivesDetachedMock}
         >
           <TimeChart.Series type="Histogram" data={[{ time: "2023-01-01", value: 1000 }]} />
         </TimeChart.Pane>
       </TimeChart>
     ));
 
+    // Wait for initial primitives to be attached
     await waitFor(() => {
-      // Verify the chart container is present
-      expect(container.querySelector(".tv-lightweight-charts")).toBeInTheDocument();
-
-      // Verify pane primitives were attached
-      expect(onAttachPrimitivesMock).toHaveBeenCalledWith([mockPanePrimitive]);
-
-      // Verify primitive methods were called
-      expect(mockPanePrimitive.updateAllViews).toHaveBeenCalled();
-    });
-  });
-
-  test("handles pane primitives attach/detach lifecycle", async () => {
-    const mockPanePrimitive = {
-      updateAllViews: vi.fn(),
-      paneViews: vi.fn(() => []),
-      attached: vi.fn(),
-      detached: vi.fn(),
-    };
-
-    const onAttachPrimitivesMock = vi.fn();
-    const onDetachPrimitivesMock = vi.fn();
-
-    const { unmount } = render(() => (
-      <TimeChart>
-        <TimeChart.Pane
-          primitives={[mockPanePrimitive]}
-          onAttachPrimitives={onAttachPrimitivesMock}
-          onDetachPrimitives={onDetachPrimitivesMock}
-        >
-          <TimeChart.Series type="Line" data={[{ time: "2023-01-01", value: 100 }]} />
-        </TimeChart.Pane>
-      </TimeChart>
-    ));
-
-    await waitFor(() => {
-      expect(onAttachPrimitivesMock).toHaveBeenCalledWith([mockPanePrimitive]);
+      expect(onChartPrimitivesAttachedMock).toHaveBeenCalledWith([chartPrimitive1]);
+      expect(onPanePrimitivesAttachedMock).toHaveBeenCalledWith([panePrimitive1]);
     });
 
-    // Unmount to trigger detach
+    // Verify primitives were called
+    await waitFor(() => {
+      expect(chartPrimitive1.updateAllViews).toHaveBeenCalled();
+      expect(panePrimitive1.updateAllViews).toHaveBeenCalled();
+    });
+
+    // Update chart-level primitives reactively
+    setChartPrimitives([chartPrimitive1, chartPrimitive2]);
+
+    await waitFor(() => {
+      expect(onChartPrimitivesAttachedMock).toHaveBeenCalledWith([
+        chartPrimitive1,
+        chartPrimitive2,
+      ]);
+    });
+
+    // Update pane-level primitives reactively
+    setPanePrimitives([panePrimitive1, panePrimitive2]);
+
+    await waitFor(() => {
+      expect(onPanePrimitivesAttachedMock).toHaveBeenCalledWith([panePrimitive1, panePrimitive2]);
+    });
+
+    // Unmount to test detach lifecycle
     unmount();
 
     await waitFor(() => {
-      expect(onDetachPrimitivesMock).toHaveBeenCalledWith([mockPanePrimitive]);
-    });
-  });
-
-  test("handles reactive pane primitives updates", async () => {
-    const mockPrimitive1 = {
-      updateAllViews: vi.fn(),
-      paneViews: vi.fn(() => []),
-      attached: vi.fn(),
-      detached: vi.fn(),
-    };
-
-    const mockPrimitive2 = {
-      updateAllViews: vi.fn(),
-      paneViews: vi.fn(() => []),
-      attached: vi.fn(),
-      detached: vi.fn(),
-    };
-
-    const [primitives, setPrimitives] = createSignal([mockPrimitive1]);
-    const onAttachPrimitivesMock = vi.fn();
-
-    render(() => (
-      <TimeChart>
-        <TimeChart.Pane primitives={primitives()} onAttachPrimitives={onAttachPrimitivesMock}>
-          <TimeChart.Series type="Line" data={[{ time: "2023-01-01", value: 100 }]} />
-        </TimeChart.Pane>
-      </TimeChart>
-    ));
-
-    await waitFor(() => {
-      expect(onAttachPrimitivesMock).toHaveBeenCalledWith([mockPrimitive1]);
-    });
-
-    // Update primitives to trigger reactive update
-    setPrimitives([mockPrimitive1, mockPrimitive2]);
-
-    await waitFor(() => {
-      expect(onAttachPrimitivesMock).toHaveBeenCalledWith([mockPrimitive1, mockPrimitive2]);
+      expect(onChartPrimitivesDetachedMock).toHaveBeenCalledWith([
+        chartPrimitive1,
+        chartPrimitive2,
+      ]);
+      expect(onPanePrimitivesDetachedMock).toHaveBeenCalledWith([panePrimitive1, panePrimitive2]);
     });
   });
 });
