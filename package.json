@@ -1,6 +1,6 @@
 {
   "name": "@dschz/solid-lightweight-charts",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "TradingView Lightweight Charts™ as SolidJS components",
   "type": "module",
   "author": "Daniel Sanchez <dsanc89@pm.me>",

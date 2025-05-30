@@ -1,5 +1,11 @@
 # @dschz/solid-lightweight-charts
 
+## 0.2.1
+
+### Patch Changes
+
+- Updates README markers example
+
 ## 0.2.0
 
 ### Summary of Changes
