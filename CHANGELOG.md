@@ -1,5 +1,11 @@
 # @dschz/solid-lightweight-charts
 
+## 0.2.3
+
+### Patch Changes
+
+- Updates readme badges
+
 ## 0.2.2
 
 ### Patch Changes
