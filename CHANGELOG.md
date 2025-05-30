@@ -1,5 +1,59 @@
 # @dschz/solid-lightweight-charts
 
+## 0.2.0
+
+### Summary of Changes
+
+**Advanced Primitives & Custom Series Support** - This release significantly expands the charting capabilities with full support for custom visualizations and primitives.
+
+#### 🎨 Custom Series Support
+
+- **Custom series components** for all chart types (`TimeChart.CustomSeries`, `PriceChart.CustomSeries`, `YieldCurveChart.CustomSeries`)
+- Full TypeScript integration with proper pane view interfaces
+- Reactive data updates and lifecycle management for custom series
+
+#### 🖼️ Series Primitives
+
+- **Series primitives support** for creating custom visualizations attached to specific series
+- Interactive drawing capabilities (trend lines, support/resistance levels, price alerts, annotations)
+- Proper TypeScript interfaces (`SeriesPrimitive`, `ISeriesPrimitiveAxisView`, `IPrimitivePaneView`, `IPrimitivePaneRenderer`)
+- Reactive primitive attachment/detachment with automatic cleanup
+
+#### 🎯 Pane Primitives
+
+- **Pane primitives support** for chart-wide decorations and backgrounds
+- Full pane coverage for watermarks, custom grids, corner badges, and overlays
+- Proper TypeScript interfaces (`PanePrimitive`, `IPanePrimitivePaneView`)
+- Reactive primitive management with lifecycle hooks
+
+#### 📍 Enhanced Markers
+
+- **Series markers prop** for declarative marker management
+- Integration with `createSeriesMarkers` API from lightweight-charts
+- Reactive marker updates based on data changes
+- Support across all chart types and custom series
+
+#### 🔄 New Lifecycle Hooks
+
+- **`onAttachPrimitives`** - Called when primitives are attached (series and pane level)
+- **`onDetachPrimitives`** - Called when primitives are detached (series and pane level)
+- **`onSetMarkers`** - Called when series markers are updated
+- Enhanced primitive lifecycle management with proper cleanup
+
+#### 🏗️ Developer Experience
+
+- **Comprehensive example pages** showcasing primitives usage patterns
+- **Interactive primitive demos** with multiple primitive types and real-time updates
+- **Full test coverage** for all primitive functionality across chart types
+- **Documentation and usage guides** for custom series and primitives implementation
+
+#### 🔧 Technical Improvements
+
+- Proper TypeScript interface compliance for all primitive classes
+- Reactive primitive updates with SolidJS reactivity system
+- Memory-efficient primitive management with automatic cleanup
+- Cross-chart compatibility for primitives (Time, Price, YieldCurve charts)
+
 ## 0.1.2
 
 ### Patch Changes

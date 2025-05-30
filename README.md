@@ -16,25 +16,30 @@
 
 ## ✨ Features
 
-- ⚡ SolidJS-native reactivity for all chart options
-- 🔀 Multiple chart types with specialized APIs:
-  - `TimeChart` for time-based financial data
-  - `PriceChart` for numeric-based price data
-  - `YieldCurveChart` for rate curves and duration-based data
-- 📈 Supports all core, built-in chart series types: Line, Area, Candlestick, Bar, Histogram, Baseline
-- 📆 Namespaced APIs (e.g. `<TimeChart.Series />`, `<PriceChart.Series />`)
-- 📊 Multiple panes support for advanced multi-series visualization (e.g. `<TimeChart.Pane />`, `<PriceChart.Pane />`)
-- 🔖 Can still use core `lightweight-chart` APIs (i.e. `createSeriesMarkers`) to tap into advanced features where needed.
-- 🧹 Proper lifecycle management and state cleanup
+- ⚡ **SolidJS-native reactivity** for all chart options and data updates
+- 🔀 **Multiple chart types** with specialized APIs:
+  - `TimeChart` for time-based financial data (`createChart`)
+  - `PriceChart` for numeric-based price data (`createOptionsChart`)
+  - `YieldCurveChart` for rate curves and duration-based data (`createYieldCurveChart`)
+- 📈 **Complete series support**: Line, Area, Candlestick, Bar, Histogram, Baseline
+- 🎨 **Custom series** with full TypeScript integration across all chart types
+- 🖼️ **Series primitives** for interactive drawings (trend lines, alerts, annotations)
+- 🎯 **Pane primitives** for chart-wide decorations (watermarks, grids, badges)
+- 📍 **Series markers** with declarative prop support and reactive updates
+- 📆 **Namespaced APIs** (e.g. `<TimeChart.Series />`, `<PriceChart.Series />`)
+- 📊 **Multiple panes** for advanced multi-series visualization
+- 🔄 **Lifecycle hooks** for primitives and markers management
+- 🔖 **Core API compatibility** - access underlying `lightweight-charts` APIs when needed
+- 🧹 **Automatic cleanup** and proper lifecycle management
 
-## 🛣️ Roadmap
+## 🛣️ What's New in v0.2.0
 
-- [x] Time-based charts (`createChart` via `TimeChart`)
-- [x] Price-based charts (`createOptionsChart` via `PriceChart`)
-- [x] Yield curve charts (`createYieldCurveChart` via `YieldCurveChart`)
-- [x] Series and Pane management
-- [x] Series markers
-- [ ] Custom Series support
+✅ **Custom Series** - Create fully custom visualizations with your own rendering logic  
+✅ **Series Primitives** - Interactive drawings attached to specific series  
+✅ **Pane Primitives** - Chart-wide decorations and backgrounds  
+✅ **Enhanced Markers** - Declarative markers prop with reactive updates  
+✅ **New Lifecycle Hooks** - `onAttachPrimitives`, `onDetachPrimitives`, `onSetMarkers`  
+✅ **Comprehensive Examples** - Interactive playground showcasing all features
 
 ## 📆 Installation
 
@@ -141,15 +146,323 @@ import { createSeriesMarkers, type SeriesMarker, type Time } from "lightweight-c
 </TimeChart>;
 ```
 
-## 🛠 Playground Example
+### Enhanced Markers with Reactive Props
 
-See [`playground/App.tsx`](./playground/App.tsx) for a complete working showcase using all chart types and series options.
+```tsx
+import { TimeChart } from "@dschz/solid-lightweight-charts";
 
-The playground demonstrates:
+<TimeChart>
+  <TimeChart.Series
+    type="Line"
+    data={priceData}
+    markers={(data) => [
+      {
+        time: data[5].time,
+        position: "aboveBar",
+        color: "#2196F3",
+        shape: "arrowUp",
+        text: "Buy Signal",
+      },
+      {
+        time: data[15].time,
+        position: "belowBar",
+        color: "#F44336",
+        shape: "arrowDown",
+        text: "Sell Signal",
+      },
+    ]}
+  />
+</TimeChart>;
+```
+
+### Custom Series
+
+```tsx
+import { TimeChart } from "@dschz/solid-lightweight-charts";
+
+// Define your custom pane view
+const customPaneView = {
+  updateAllViews() {
+    /* implementation */
+  },
+  paneViews() {
+    /* implementation */
+  },
+  priceValueBuilder(plotRow) {
+    /* implementation */
+  },
+  isWhitespace(data) {
+    /* implementation */
+  },
+  defaultOptions() {
+    /* implementation */
+  },
+};
+
+<TimeChart>
+  <TimeChart.CustomSeries
+    paneView={customPaneView}
+    data={customData}
+    onCreateSeries={(series) => console.log("Custom series created:", series)}
+  />
+</TimeChart>;
+```
+
+### Series Primitives
+
+```tsx
+import { TimeChart, type SeriesPrimitive } from "@dschz/solid-lightweight-charts";
+import type {
+  ISeriesPrimitiveAxisView,
+  IPrimitivePaneView,
+  IPrimitivePaneRenderer,
+  Time,
+  SeriesAttachedParameter,
+} from "lightweight-charts";
+
+// Trend line primitive with proper TypeScript implementation
+class TrendLinePrimitive implements SeriesPrimitive<"Line", Time> {
+  private _paneViews: TrendLinePaneView[];
+  private _point1: { time: Time; value: number };
+  private _point2: { time: Time; value: number };
+
+  constructor(point1: { time: Time; value: number }, point2: { time: Time; value: number }) {
+    this._point1 = point1;
+    this._point2 = point2;
+    this._paneViews = [new TrendLinePaneView(this)];
+  }
+
+  updateAllViews() {
+    this._paneViews.forEach((pv) => pv.update());
+  }
+
+  paneViews() {
+    return this._paneViews;
+  }
+
+  attached(param: SeriesAttachedParameter<Time, "Line">) {
+    // Implementation for when primitive is attached
+  }
+
+  detached() {
+    // Cleanup when primitive is detached
+  }
+
+  getPoint1() {
+    return this._point1;
+  }
+  getPoint2() {
+    return this._point2;
+  }
+}
+
+class TrendLinePaneView implements IPrimitivePaneView {
+  private _source: TrendLinePrimitive;
+  private _renderer: TrendLinePaneRenderer;
+
+  constructor(source: TrendLinePrimitive) {
+    this._source = source;
+    this._renderer = new TrendLinePaneRenderer();
+  }
+
+  update() {
+    this._renderer.setData({
+      point1: this._source.getPoint1(),
+      point2: this._source.getPoint2(),
+    });
+  }
+
+  renderer() {
+    return this._renderer;
+  }
+
+  zOrder() {
+    return "normal" as const;
+  }
+}
+
+class TrendLinePaneRenderer implements IPrimitivePaneRenderer {
+  private _data: { point1: any; point2: any } | null = null;
+
+  setData(data: { point1: any; point2: any } | null) {
+    this._data = data;
+  }
+
+  draw(target: any) {
+    if (!this._data) return;
+    // Canvas 2D rendering implementation
+    target.useBitmapCoordinateSpace((scope: any) => {
+      const ctx = scope.context;
+      // Draw trend line using this._data.point1 and this._data.point2
+      // ... drawing logic
+    });
+  }
+}
+
+const trendLine = new TrendLinePrimitive(
+  { time: "2023-01-01" as Time, value: 100 },
+  { time: "2023-01-10" as Time, value: 120 },
+);
+
+<TimeChart>
+  <TimeChart.Series
+    type="Line"
+    data={priceData}
+    primitives={[trendLine]}
+    onAttachPrimitives={(primitives) => console.log("Primitives attached:", primitives)}
+  />
+</TimeChart>;
+```
+
+### Pane Primitives
+
+```tsx
+import { TimeChart, type PanePrimitive } from "@dschz/solid-lightweight-charts";
+import type {
+  IPanePrimitivePaneView,
+  IPrimitivePaneRenderer,
+  PaneAttachedParameter,
+  Time,
+} from "lightweight-charts";
+
+// Watermark primitive with proper TypeScript implementation
+class WatermarkPrimitive implements PanePrimitive<Time> {
+  private _paneViews: WatermarkPaneView[];
+  private _text: string;
+  private _color: string;
+  private _fontSize: number;
+
+  constructor(text: string, color = "rgba(128, 128, 128, 0.3)", fontSize = 48) {
+    this._text = text;
+    this._color = color;
+    this._fontSize = fontSize;
+    this._paneViews = [new WatermarkPaneView(this)];
+  }
+
+  updateAllViews() {
+    this._paneViews.forEach((pv) => pv.update());
+  }
+
+  paneViews() {
+    return this._paneViews;
+  }
+
+  attached(param: PaneAttachedParameter<Time>) {
+    // Pane primitives can use this for initialization
+  }
+
+  detached() {
+    // Cleanup if needed
+  }
+
+  getText() {
+    return this._text;
+  }
+  getColor() {
+    return this._color;
+  }
+  getFontSize() {
+    return this._fontSize;
+  }
+}
+
+class WatermarkPaneView implements IPanePrimitivePaneView {
+  private _source: WatermarkPrimitive;
+  private _renderer: WatermarkPaneRenderer;
+
+  constructor(source: WatermarkPrimitive) {
+    this._source = source;
+    this._renderer = new WatermarkPaneRenderer();
+  }
+
+  update() {
+    this._renderer.setData({
+      text: this._source.getText(),
+      color: this._source.getColor(),
+      fontSize: this._source.getFontSize(),
+    });
+  }
+
+  renderer() {
+    return this._renderer;
+  }
+
+  zOrder() {
+    return "bottom" as const;
+  }
+}
+
+class WatermarkPaneRenderer implements IPrimitivePaneRenderer {
+  private _data: { text: string; color: string; fontSize: number } | null = null;
+
+  setData(data: { text: string; color: string; fontSize: number } | null) {
+    this._data = data;
+  }
+
+  draw(target: any) {
+    if (!this._data) return;
+
+    target.useBitmapCoordinateSpace((scope: any) => {
+      const ctx = scope.context;
+      const { width, height } = scope.bitmapSize;
+
+      ctx.save();
+      ctx.font = `${this._data!.fontSize}px Arial`;
+      ctx.fillStyle = this._data!.color;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+
+      // Draw watermark in center of pane
+      ctx.fillText(this._data!.text, width / 2, height / 2);
+      ctx.restore();
+    });
+  }
+}
+
+const watermark = new WatermarkPrimitive("DEMO CHART");
+
+<TimeChart>
+  <TimeChart.Series type="Line" data={priceData} />
+
+  <TimeChart.Pane
+    primitives={[watermark]}
+    onAttachPrimitives={(primitives) => console.log("Pane primitives attached")}
+  >
+    <TimeChart.Series type="Histogram" data={volumeData} />
+  </TimeChart.Pane>
+</TimeChart>;
+```
+
+> **💡 Complete Examples**: For fully working primitive implementations with comprehensive TypeScript types, see the interactive examples in our playground:
+>
+> - [`SeriesPrimitivesExample.tsx`](./playground/pages/SeriesPrimitivesExample.tsx) - Trend lines, support/resistance, price alerts, annotations
+> - [`PanePrimitivesExample.tsx`](./playground/pages/PanePrimitivesExample.tsx) - Watermarks, grid overlays, corner badges
+
+## 🛠 Playground & Examples
+
+See [`playground/App.tsx`](./playground/App.tsx) for a complete working showcase with live interactive examples:
+
+**Core Chart Types:**
 
 - TimeChart with multiple panes (Candlestick+Line, Volume, Area) and series markers
 - PriceChart with multiple panes (Line+Area, Histogram) and series markers
 - YieldCurveChart with multiple panes (Line, Area) and series markers
+
+**Advanced Features (New in v0.2.0):**
+
+- **Series Primitives Example** - Interactive trend lines, support/resistance levels, price alerts, and text annotations
+- **Pane Primitives Example** - Watermarks, custom grid overlays, and corner badges with live updates
+- **Custom Series Integration** - Complete examples with proper TypeScript interfaces
+- **Dynamic Management** - Real-time updates, lifecycle management, and memory optimization
+
+Run the playground locally:
+
+```bash
+git clone https://github.com/dsnchz/solid-lightweight-charts
+cd solid-lightweight-charts
+bun install
+bun start
+```
 
 ## 📚 Resources
 
