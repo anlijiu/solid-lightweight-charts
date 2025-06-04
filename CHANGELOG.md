@@ -1,5 +1,11 @@
 # @dschz/solid-lightweight-charts
 
+## 0.2.4
+
+### Patch Changes
+
+- fixes bundlephobia badge reference
+
 ## 0.2.3
 
 ### Patch Changes
