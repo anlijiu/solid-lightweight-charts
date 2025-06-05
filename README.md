@@ -6,8 +6,9 @@
 
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![Lightweight Charts](https://img.shields.io/badge/lightweight--charts-5.0.0+-orange?style=flat-square)](https://github.com/tradingview/lightweight-charts)
-[![npm version](https://img.shields.io/npm/v/@dschz/solid-lightweight-charts?color=blue)](https://www.npmjs.com/package/@dschz/solid-lightweight-charts)
+[![npm](https://img.shields.io/npm/v/@dschz/solid-lightweight-charts?color=blue)](https://www.npmjs.com/package/@dschz/solid-lightweight-charts)
 [![Bundle Size](https://img.shields.io/bundlephobia/minzip/@dschz/solid-lightweight-charts)](https://bundlephobia.com/package/@dschz/solid-lightweight-charts)
+[![JSR](https://jsr.io/badges/@dschz/solid-lightweight-charts/score)](https://jsr.io/@dschz/solid-lightweight-charts)
 [![CI](https://github.com/dsnchz/solid-lightweight-charts/actions/workflows/ci.yaml/badge.svg)](https://github.com/dsnchz/solid-lightweight-charts/actions/workflows/ci.yaml)
 [![Discord](https://img.shields.io/badge/Discord-%235865F2.svg?logo=discord&logoColor=white)](https://discord.gg/jV4MghpHUA)
 
