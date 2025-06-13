@@ -1,5 +1,11 @@
 # @dschz/solid-lightweight-charts
 
+## 0.3.3
+
+### Patch Changes
+
+- Fixes broken price chart onSetData handler test
+
 ## 0.3.2
 
 ### Patch Changes
