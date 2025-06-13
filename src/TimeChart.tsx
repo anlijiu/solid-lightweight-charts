@@ -285,7 +285,7 @@ const Series = <T extends BuiltInSeriesType>(props: SeriesProps<T>) => {
 
     createEffect(() => {
       series.setData(local.data);
-      local.onSetData?.({ series, data: local.data });
+      local.onSetData?.({ chart: chart(), series, data: local.data });
 
       const dataMarkers = local.markers(local.data);
       createSeriesMarkers(series, dataMarkers);
@@ -395,7 +395,7 @@ const CustomSeries = (props: CustomSeriesProps<Time>) => {
 
     createEffect(() => {
       series.setData(local.data);
-      local.onSetData?.({ series, data: local.data });
+      local.onSetData?.({ chart: chart(), series, data: local.data });
 
       const dataMarkers = local.markers(local.data);
       createSeriesMarkers(series, dataMarkers);

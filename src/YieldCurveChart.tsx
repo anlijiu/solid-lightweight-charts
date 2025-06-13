@@ -287,7 +287,7 @@ const Series = <T extends YieldCurveSeriesType>(props: SeriesProps<T, number>) =
 
     createEffect(() => {
       series.setData(local.data);
-      local.onSetData?.({ series, data: local.data });
+      local.onSetData?.({ chart: chart(), series, data: local.data });
 
       const dataMarkers = local.markers(local.data);
       createSeriesMarkers(series, dataMarkers);
@@ -399,7 +399,7 @@ const CustomSeries = (props: CustomSeriesProps<number>) => {
 
     createEffect(() => {
       series.setData(local.data);
-      local.onSetData?.({ series, data: local.data });
+      local.onSetData?.({ chart: chart(), series, data: local.data });
 
       const dataMarkers = local.markers(local.data);
       createSeriesMarkers(series, dataMarkers);

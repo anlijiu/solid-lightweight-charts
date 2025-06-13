@@ -194,6 +194,11 @@ export type SeriesCommonProps<
  */
 export type OnSetDataParams<T extends SeriesType, HorzScaleItem = Time> = {
   /**
+   * The chart instance that had seriesdata set on it
+   */
+  readonly chart: Omit<IChartApiBase<HorzScaleItem>, "addSeries">;
+
+  /**
    * The series instance that had data set on it
    */
   readonly series: ISeriesApi<T, HorzScaleItem>;
