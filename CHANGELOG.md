@@ -1,5 +1,11 @@
 # @dschz/solid-lightweight-charts
 
+## 0.3.2
+
+### Patch Changes
+
+- Updates README content regarding chart sizing and adds table of contents for easier navigation.
+
 ## 0.3.1
 
 ### Patch Changes
