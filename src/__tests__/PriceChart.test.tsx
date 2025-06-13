@@ -166,6 +166,7 @@ describe("CHART: PriceChart", () => {
 
     await waitFor(() => {
       expect(onSetDataMock).toHaveBeenCalledWith({
+        chart: expect.any(Object),
         series: expect.any(Object),
         data: [
           { time: 0, value: 100 },
