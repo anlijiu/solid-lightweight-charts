@@ -20,28 +20,23 @@
 
 - ⚡ **SolidJS-native reactivity** for all chart options and data updates
 - 🔀 **Multiple chart types** with specialized APIs:
-  - `TimeChart` for time-based financial data (`createChart`)
-  - `PriceChart` for numeric-based price data (`createOptionsChart`)
-  - `YieldCurveChart` for rate curves and duration-based data (`createYieldCurveChart`)
-- 📈 **Complete series support**: Line, Area, Candlestick, Bar, Histogram, Baseline
-- 🎨 **Custom series** with full TypeScript integration across all chart types
-- 🖼️ **Series primitives** for interactive drawings (trend lines, alerts, annotations)
-- 🎯 **Pane primitives** for chart-wide decorations (watermarks, grids, badges)
+  - `TimeChart` for time-based financial data
+  - `PriceChart` for numeric-based price data
+  - `YieldCurveChart` for rate curves and duration-based data
+- 📈 **Built-in series support**: Line, Area, Candlestick, Bar, Histogram, Baseline
+- 🎨 **Custom series support** with full TypeScript integration across all chart types
 - 📍 **Series markers** with declarative prop support and reactive updates
 - 📆 **Namespaced APIs** (e.g. `<TimeChart.Series />`, `<PriceChart.Series />`)
-- 📊 **Multiple panes** for advanced multi-series visualization
-- 🔄 **Lifecycle hooks** for primitives and markers management
+- 📊 **Multi-Pane support** for advanced multi-series visualization
+- 🖼️ **Pane/Series primitives** for interactive drawings (trend lines, alerts, annotations)
+- 🔄 **Lifecycle/Event hooks** for chart, series data, primitives and markers.
 - 🔖 **Core API compatibility** - access underlying `lightweight-charts` APIs when needed
 - 🧹 **Automatic cleanup** and proper lifecycle management
 
-## 🛣️ What's New in v0.2.0
+## 🎉 What's New in v0.3.0
 
-✅ **Custom Series** - Create fully custom visualizations with your own rendering logic  
-✅ **Series Primitives** - Interactive drawings attached to specific series  
-✅ **Pane Primitives** - Chart-wide decorations and backgrounds  
-✅ **Enhanced Markers** - Declarative markers prop with reactive updates  
-✅ **New Lifecycle Hooks** - `onAttachPrimitives`, `onDetachPrimitives`, `onSetMarkers`  
-✅ **Comprehensive Examples** - Interactive playground showcasing all features
+- Major new features and improvements, including chart event subscription support, default class on chart containers, and improved sizing behavior.
+- For a full list of changes and details, see the [CHANGELOG.md](./CHANGELOG.md).
 
 ## 📆 Installation
 
@@ -115,6 +110,34 @@ import { YieldCurveChart } from "@dschz/solid-lightweight-charts";
   />
 </YieldCurveChart>;
 ```
+
+## 📏 Chart Sizing & Layout
+
+By default, all chart components (`TimeChart`, `PriceChart`, `YieldCurveChart`) use `autoSize: true`, which means:
+
+- The chart will automatically fill the size of its parent container.
+- **When `autoSize` is `true`, the `width` and `height` props are ignored.**
+- The chart container always has `width: 100%` and `height: 100%` unless you override it.
+
+### How to Size Your Chart
+
+- **Responsive (default):**
+  - Place the chart in a parent with a defined height (e.g., using Tailwind `h-[400px]` or CSS).
+  - The chart will fill the parent.
+- **Fixed Size:**
+  - Set `autoSize={false}` and provide `width` and `height` props:
+    ```tsx
+    <TimeChart autoSize={false} width={600} height={300} />
+    ```
+- **Custom Styling:**
+  - Use the `class` or `style` prop to set a custom size:
+    ```tsx
+    <TimeChart class="h-[400px] w-full" />
+    ```
+- **Default Class:**
+  - All chart containers have the `solid-lwc-container` class for easy targeting.
+
+> **Note:** If you see a blank chart, make sure the parent container has a defined height!
 
 ### Multiple Panes and Markers
 

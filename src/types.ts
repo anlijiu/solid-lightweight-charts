@@ -6,6 +6,7 @@ import type {
   IPanePrimitive,
   ISeriesApi,
   ISeriesPrimitiveBase,
+  MouseEventHandler,
   SeriesAttachedParameter,
   SeriesDataItemTypeMap,
   SeriesMarker,
@@ -89,6 +90,24 @@ export type ChartCommonProps<T, HorzScaleItem = Time> = {
    * @param primitives - The primitives that were detached from the root chart pane.
    */
   readonly onPrimitivesDetached?: (primitives: PanePrimitive<HorzScaleItem>[]) => void;
+
+  /**
+   * Callback function that is called when the chart is clicked.
+   * @param event - The event that was triggered.
+   */
+  readonly onClick?: MouseEventHandler<HorzScaleItem> | MouseEventHandler<HorzScaleItem>[];
+
+  /**
+   * Callback function that is called when the chart is double clicked.
+   * @param event - The event that was triggered.
+   */
+  readonly onDblClick?: MouseEventHandler<HorzScaleItem> | MouseEventHandler<HorzScaleItem>[];
+
+  /**
+   * Callback function that is called when the crosshair moves.
+   * @param event - The event that was triggered.
+   */
+  readonly onCrosshairMove?: MouseEventHandler<HorzScaleItem> | MouseEventHandler<HorzScaleItem>[];
 };
 
 /**

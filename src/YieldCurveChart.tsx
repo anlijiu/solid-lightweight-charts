@@ -34,7 +34,7 @@ import type {
   SeriesPrimitive,
   SeriesProps,
 } from "./types";
-import { attachPanePrimitives, detachPanePrimitives } from "./utils";
+import { attachPanePrimitives, createSubscriptionEffect, detachPanePrimitives } from "./utils";
 
 const YieldCurveChartContext = createContext<ChartContextType<IYieldCurveChartApi, number>>();
 
@@ -94,11 +94,12 @@ export const YieldCurveChart = (props: ParentProps<YieldCurveChartProps>): JSX.E
       height: 0,
       forceRepaintOnResize: false,
       primitives: [] as PanePrimitive<number>[],
+      style: {},
     },
     props,
   );
 
-  const [containerProps, options] = splitProps(_props, [
+  const [local, options] = splitProps(_props, [
     "id",
     "class",
     "ref",
@@ -107,6 +108,9 @@ export const YieldCurveChart = (props: ParentProps<YieldCurveChartProps>): JSX.E
     "onPrimitivesAttached",
     "onPrimitivesDetached",
     "onCreateChart",
+    "onClick",
+    "onDblClick",
+    "onCrosshairMove",
     "onResize",
     "children",
   ]);
@@ -132,14 +136,22 @@ export const YieldCurveChart = (props: ParentProps<YieldCurveChartProps>): JSX.E
 
     setChart(chart);
 
-    containerProps.onCreateChart?.(chart);
+    local.onCreateChart?.(chart);
 
     createEffect(() => {
       if (chartOptions.autoSize) return;
 
       chart.resize(resizeProps.width, resizeProps.height, resizeProps.forceRepaintOnResize);
-      containerProps.onResize?.(resizeProps.width, resizeProps.height);
+      local.onResize?.(resizeProps.width, resizeProps.height);
     });
+
+    createSubscriptionEffect(chart, ["subscribeClick", "unsubscribeClick"], local.onClick);
+    createSubscriptionEffect(chart, ["subscribeDblClick", "unsubscribeDblClick"], local.onDblClick);
+    createSubscriptionEffect(
+      chart,
+      ["subscribeCrosshairMove", "unsubscribeCrosshairMove"],
+      local.onCrosshairMove,
+    );
 
     createEffect(() => {
       chart.applyOptions(chartOptions);
@@ -153,26 +165,26 @@ export const YieldCurveChart = (props: ParentProps<YieldCurveChartProps>): JSX.E
   const primitives = () => _props.primitives;
 
   const onChartPrimitivesAttached = (primitives: PanePrimitive<number>[]) => {
-    containerProps.onPrimitivesAttached?.(primitives);
+    local.onPrimitivesAttached?.(primitives);
   };
   const onChartPrimitivesDetached = (primitives: PanePrimitive<number>[]) => {
-    containerProps.onPrimitivesDetached?.(primitives);
+    local.onPrimitivesDetached?.(primitives);
   };
+
+  const classes = () =>
+    local.class ? `solid-lwc-container ${local.class}` : "solid-lwc-container";
+
+  const style = () => ({ width: "100%", height: "100%", ...local.style });
 
   return (
     <>
-      <div
-        id={containerProps.id}
-        class={containerProps.class}
-        style={containerProps.style}
-        ref={chartContainer}
-      />
+      <div id={local.id} class={classes()} style={style()} ref={chartContainer} />
       <Show when={chart()}>
         {(chart) => (
           <YieldCurveChartContext.Provider
             value={{ chart, primitives, onChartPrimitivesAttached, onChartPrimitivesDetached }}
           >
-            {containerProps.children}
+            {local.children}
           </YieldCurveChartContext.Provider>
         )}
       </Show>
