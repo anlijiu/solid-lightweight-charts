@@ -90,7 +90,6 @@ export const TimeChart = (props: ParentProps<TimeChartProps>): JSX.Element => {
       height: 0,
       forceRepaintOnResize: false,
       primitives: [] as PanePrimitive<Time>[],
-      style: {},
     },
     props,
   );
@@ -166,11 +165,9 @@ export const TimeChart = (props: ParentProps<TimeChartProps>): JSX.Element => {
   const classes = () =>
     local.class ? `solid-lwc-container ${local.class}` : "solid-lwc-container";
 
-  const style = () => ({ width: "100%", height: "100%", ...local.style });
-
   return (
     <>
-      <div id={local.id} class={classes()} style={style()} ref={chartContainer} />
+      <div id={local.id} class={classes()} style={local.style} ref={chartContainer} />
       <Show when={chart()}>
         {(chart) => (
           <TimeChartContext.Provider

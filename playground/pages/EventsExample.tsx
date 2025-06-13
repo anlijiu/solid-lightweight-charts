@@ -38,9 +38,6 @@ export const EventsExample = (): JSX.Element => {
     { time: 24, value: 3.0 },
   ];
 
-  const chartStyle = "bg-white rounded-lg shadow p-4 border border-blue-200 block";
-  const chartContainerStyle = "height: 300px; width: 100%; display: block;";
-
   const EventDisplay = (props: { title: string; event: EventData | null }) => (
     <div class="bg-white rounded-lg shadow p-4">
       <h3 class="text-lg font-semibold mb-2">{props.title}</h3>
@@ -68,8 +65,9 @@ export const EventsExample = (): JSX.Element => {
         <div class="space-y-8">
           <div>
             <h2 class="text-xl font-semibold mb-2">TimeChart Events</h2>
-            <div class={chartStyle} style={chartContainerStyle}>
+            <div class="bg-white rounded-lg shadow p-4 border border-blue-200">
               <TimeChart
+                class="h-[300px] w-full"
                 onClick={setClickEvent}
                 onDblClick={setDblClickEvent}
                 onCrosshairMove={setCrosshairEvent}
@@ -81,10 +79,9 @@ export const EventsExample = (): JSX.Element => {
 
           <div>
             <h2 class="text-xl font-semibold mb-2">PriceChart Events</h2>
-            <div class={chartStyle} style={chartContainerStyle}>
+            <div class="bg-white rounded-lg shadow p-4 border border-blue-200">
               <PriceChart
-                width={600}
-                height={300}
+                class="h-[300px] w-full"
                 onClick={setClickEvent}
                 onDblClick={setDblClickEvent}
                 onCrosshairMove={setCrosshairEvent}
@@ -96,10 +93,9 @@ export const EventsExample = (): JSX.Element => {
 
           <div>
             <h2 class="text-xl font-semibold mb-2">YieldCurveChart Events</h2>
-            <div class={chartStyle} style={chartContainerStyle}>
+            <div class="bg-white rounded-lg shadow p-4 border border-blue-200">
               <YieldCurveChart
-                width={600}
-                height={300}
+                class="h-[300px] w-full"
                 onClick={setClickEvent}
                 onDblClick={setDblClickEvent}
                 onCrosshairMove={setCrosshairEvent}

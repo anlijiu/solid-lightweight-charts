@@ -94,7 +94,6 @@ export const YieldCurveChart = (props: ParentProps<YieldCurveChartProps>): JSX.E
       height: 0,
       forceRepaintOnResize: false,
       primitives: [] as PanePrimitive<number>[],
-      style: {},
     },
     props,
   );
@@ -174,11 +173,9 @@ export const YieldCurveChart = (props: ParentProps<YieldCurveChartProps>): JSX.E
   const classes = () =>
     local.class ? `solid-lwc-container ${local.class}` : "solid-lwc-container";
 
-  const style = () => ({ width: "100%", height: "100%", ...local.style });
-
   return (
     <>
-      <div id={local.id} class={classes()} style={style()} ref={chartContainer} />
+      <div id={local.id} class={classes()} style={local.style} ref={chartContainer} />
       <Show when={chart()}>
         {(chart) => (
           <YieldCurveChartContext.Provider
