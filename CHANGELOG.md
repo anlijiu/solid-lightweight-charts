@@ -1,5 +1,11 @@
 # @dschz/solid-lightweight-charts
 
+## 0.3.1
+
+### Patch Changes
+
+- Removes default size styling (`width: 100%` and `height: 100%`) across all chart containers as this broke more things than it fixed.
+
 ## 0.3.0
 
 ### Summary
@@ -21,7 +27,6 @@ Version 0.3.0 of Solid Lightweight Charts adds support for more chart callbacks,
 
   - Chart containers now default to `width: 100%` and `height: 100%` via inline style, ensuring they fill their parent by default.
   - You can override this with the `style` or `class` prop.
-  - **autoSize is enabled by default**: The chart will fill its parent container. When `autoSize` is `true`, the `width` and `height` props are ignored.
   - To set a fixed size, set `autoSize={false}` and provide `width` and `height` props.
 
 - **onSetData Callback Enhancement:**
