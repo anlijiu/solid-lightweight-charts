@@ -16,6 +16,30 @@
 
 ![Solid Lightweight Charts Showcase](assets/solid-lightweight-charts-showcase.png)
 
+## 📋 Table of Contents
+
+- [✨ Features](#-features)
+- [🎉 What's New in v0.3.0](#-whats-new-in-v030)
+- [📆 Installation](#-installation)
+- [🚀 Quick Usage](#-quick-usage)
+  - [TimeChart (Time-based Data)](#timechart-time-based-data)
+  - [PriceChart (Numeric X-axis)](#pricechart-numeric-x-axis)
+  - [YieldCurveChart (Duration-based)](#yieldcurvechart-duration-based)
+- [📏 Chart Sizing & Layout](#-chart-sizing--layout)
+  - [Understanding the Component Structure](#understanding-the-component-structure)
+  - [How to Size Your Charts](#how-to-size-your-charts)
+  - [Understanding autoSize](#understanding-autosize)
+  - [Container Class](#container-class)
+  - [Common Patterns](#common-patterns)
+- [📊 Chart Examples](#chart-examples)
+  - [Multiple Panes and Markers](#multiple-panes-and-markers)
+  - [Custom Series](#custom-series)
+  - [Series Primitives](#series-primitives)
+  - [Pane Primitives](#pane-primitives)
+- [🛠 Playground & Examples](#-playground--examples)
+- [📚 Resources](#-resources)
+- [📄 License](#-license)
+
 ## ✨ Features
 
 - ⚡ **SolidJS-native reactivity** for all chart options and data updates
@@ -113,31 +137,123 @@ import { YieldCurveChart } from "@dschz/solid-lightweight-charts";
 
 ## 📏 Chart Sizing & Layout
 
-By default, all chart components (`TimeChart`, `PriceChart`, `YieldCurveChart`) use `autoSize: true`, which means:
+Chart components (`TimeChart`, `PriceChart`, `YieldCurveChart`) **do not apply any default sizing styles**. You have complete control over how your charts are sized.
 
-- The chart will automatically fill the size of its parent container.
-- **When `autoSize` is `true`, the `width` and `height` props are ignored.**
-- The chart container always has `width: 100%` and `height: 100%` unless you override it.
+### Understanding the Component Structure
 
-### How to Size Your Chart
+It's important to understand that chart components have **two levels of configuration**:
 
-- **Responsive (default):**
-  - Place the chart in a parent with a defined height (e.g., using Tailwind `h-[400px]` or CSS).
-  - The chart will fill the parent.
-- **Fixed Size:**
-  - Set `autoSize={false}` and provide `width` and `height` props:
-    ```tsx
-    <TimeChart autoSize={false} width={600} height={300} />
-    ```
-- **Custom Styling:**
-  - Use the `class` or `style` prop to set a custom size:
-    ```tsx
-    <TimeChart class="h-[400px] w-full" />
-    ```
-- **Default Class:**
-  - All chart containers have the `solid-lwc-container` class for easy targeting.
+```tsx
+<TimeChart
+  class="h-[400px] w-full" // Applied to container div
+  style={{ border: "1px solid red" }} // Applied to container div
+  autoSize={true} // Passed to Lightweight Charts
+  width={800} // Passed to Lightweight Charts (ignored if autoSize=true)
+  height={400} // Passed to Lightweight Charts (ignored if autoSize=true)
+>
+  <TimeChart.Series type="Line" data={data} />
+</TimeChart>
+```
 
-> **Note:** If you see a blank chart, make sure the parent container has a defined height!
+**Container Level** (`class`, `style`, `id`):
+
+- Controls the HTML div that wraps the chart
+- Handles sizing, positioning, borders, backgrounds, etc.
+- Uses standard CSS/HTML attributes
+
+**Chart Level** (`autoSize`, `width`, `height`, chart options):
+
+- Passed directly to the underlying Lightweight Charts instance
+- Controls chart-specific behavior and rendering
+- Uses Lightweight Charts API
+
+### How to Size Your Charts
+
+**Option 1: CSS Classes (Recommended)**
+
+```tsx
+<TimeChart class="h-[400px] w-full">
+  <TimeChart.Series type="Line" data={data} />
+</TimeChart>
+```
+
+**Option 2: Inline Styles**
+
+```tsx
+<TimeChart style={{ height: "400px", width: "100%" }}>
+  <TimeChart.Series type="Line" data={data} />
+</TimeChart>
+```
+
+**Option 3: Fixed Dimensions (autoSize=false)**
+
+```tsx
+<TimeChart autoSize={false} width={800} height={400}>
+  <TimeChart.Series type="Line" data={data} />
+</TimeChart>
+```
+
+### Understanding autoSize
+
+- **`autoSize: true` (default)**: Chart fills its container div. The `width` and `height` props are ignored.
+- **`autoSize: false`**: Chart uses explicit `width` and `height` props for fixed dimensions.
+
+**Key Point**: When `autoSize={true}`, the chart will automatically resize to match whatever size you've given the container div via `class` or `style`.
+
+### Container Class
+
+All chart containers include the `solid-lwc-container` class for easy global styling:
+
+```css
+.solid-lwc-container {
+  height: 400px;
+  width: 100%;
+}
+```
+
+### Common Patterns
+
+**Responsive with Tailwind:**
+
+```tsx
+<TimeChart class="h-[400px] w-full md:h-[500px]">
+  <TimeChart.Series type="Line" data={data} />
+</TimeChart>
+```
+
+**Fixed size for specific use cases:**
+
+```tsx
+<TimeChart autoSize={false} width={600} height={300}>
+  <TimeChart.Series type="Line" data={data} />
+</TimeChart>
+```
+
+**Parent container sizing:**
+
+```tsx
+<div class="h-[400px] w-full">
+  <TimeChart style={{ height: "100%", width: "100%" }}>
+    <TimeChart.Series type="Line" data={data} />
+  </TimeChart>
+</div>
+```
+
+**Container styling + chart options:**
+
+```tsx
+<TimeChart
+  class="h-[500px] w-full border rounded-lg shadow"
+  rightPriceScale={{ visible: true }}
+  timeScale={{ timeVisible: true }}
+>
+  <TimeChart.Series type="Line" data={data} />
+</TimeChart>
+```
+
+> **Important**: Charts need explicit dimensions to render. If you see a blank chart, make sure you've provided sizing through CSS classes, inline styles, or fixed dimensions.
+
+## 📊 Chart Examples
 
 ### Multiple Panes and Markers
 
