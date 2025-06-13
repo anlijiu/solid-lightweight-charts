@@ -1,5 +1,40 @@
 # @dschz/solid-lightweight-charts
 
+## 0.3.0
+
+### Summary
+
+Version 0.3.0 of Solid Lightweight Charts adds support for more chart callbacks, addresses some pain points with chart sizing and some housekeeping items.
+
+- **Chart Event Subscription Support:**
+
+  - All chart components (`TimeChart`, `PriceChart`, `YieldCurveChart`) now support `onClick`, `onDblClick`, and `onCrosshairMove` props for subscribing to chart-level mouse and crosshair events.
+  - These events provide access to mouse position, time, and price data for custom interactivity.
+  - See the new "Chart Events" page in the playground for a live demo.
+
+- **Default Class on Chart Containers:**
+
+  - All chart container divs now include a default class: `solid-lwc-container`.
+  - This makes it easy to target and style chart containers globally or in your own app.
+
+- **Default Sizing Behavior:**
+
+  - Chart containers now default to `width: 100%` and `height: 100%` via inline style, ensuring they fill their parent by default.
+  - You can override this with the `style` or `class` prop.
+  - **autoSize is enabled by default**: The chart will fill its parent container. When `autoSize` is `true`, the `width` and `height` props are ignored.
+  - To set a fixed size, set `autoSize={false}` and provide `width` and `height` props.
+
+- **onSetData Callback Enhancement:**
+
+  - The `onSetData` callback now includes the chart instance in its payload.
+  - This allows users to call methods like `fitContent` after new data has been loaded, enabling more advanced chart interactions and auto-zooming.
+
+- **Improved Documentation & Playground:**
+
+  - Added a new "Chart Events" page to the playground to demonstrate event subscriptions.
+  - Expanded README with a new section on chart sizing and layout, and clarified default behaviors.
+  - Documented the new default class and sizing approach for chart containers.
+
 ## 0.2.5
 
 ### Patch Changes
